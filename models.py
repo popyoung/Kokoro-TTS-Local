@@ -41,8 +41,11 @@ def build_model(model_file, device='cpu'):
         kokoro_py = hf_hub_download(repo_id=repo_id, filename="kokoro.py")
         models_py = hf_hub_download(repo_id=repo_id, filename="models.py")
         istftnet_py = hf_hub_download(repo_id=repo_id, filename="istftnet.py")
+        plbert_py = hf_hub_download(repo_id=repo_id, filename="plbert.py")
         
         # Import modules in correct dependency order
+        print("Importing plbert module...")
+        plbert_module = import_module_from_path("plbert", plbert_py)
         print("Importing istftnet module...")
         istftnet_module = import_module_from_path("istftnet", istftnet_py)
         print("Importing models module...")
