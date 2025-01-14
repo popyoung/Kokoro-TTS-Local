@@ -1,21 +1,27 @@
 # Kokoro TTS Local
 
-A local implementation of the Kokoro Text-to-Speech model.
+A local implementation of the Kokoro Text-to-Speech model, featuring dynamic module loading and automatic dependency management.
 
 ## Current Status
 
-⚠️ **WORK IN PROGRESS** ⚠️
+✅ **WORKING - READY TO USE** ✅
 
-The project is currently being updated to use better dependency management and improved module loading.
+The project has been updated with:
+- Automatic espeak-ng installation and configuration
+- Dynamic module loading from Hugging Face
+- Improved error handling and debugging
+- Interactive CLI interface
 
 ## Features
 
 - Local text-to-speech synthesis using the Kokoro model
 - Automatic espeak-ng setup using espeakng-loader
 - Multiple voice support with easy voice selection
-- Phoneme output support
+- Phoneme output support and visualization
 - Interactive CLI for custom text input
 - Voice listing functionality
+- Dynamic module loading from Hugging Face
+- Comprehensive error handling and logging
 
 ## Dependencies
 
@@ -46,7 +52,7 @@ pip install -r requirements.txt
 ## Usage
 
 ### List Available Voices
-To see all available voices:
+To see all available voices from the Hugging Face repository:
 ```powershell
 python tts_demo.py --list-voices
 ```
@@ -64,7 +70,7 @@ python tts_demo.py --text "Your custom text here"
 ```
 
 ### Voice Selection
-Choose a different voice:
+Choose a different voice (use --list-voices to see available options):
 ```powershell
 python tts_demo.py --voice "af" --text "Custom text with specific voice"
 ```
@@ -77,21 +83,26 @@ python tts_demo.py
 
 The script will:
 1. Download necessary model files from Hugging Face
-2. Set up espeak-ng automatically
-3. Generate speech from your text
-4. Save the output as 'output.wav'
+2. Set up espeak-ng automatically using espeakng-loader
+3. Import required modules dynamically
+4. Test the phonemizer functionality
+5. Generate speech from your text with phoneme visualization
+6. Save the output as 'output.wav' (22050Hz sample rate)
 
 ## Project Structure
 
 - `models.py`: Core model loading and speech generation functionality
-  - Model building and initialization
-  - Voice loading and management
-  - Speech generation
+  - Model building and initialization with dynamic imports
+  - Voice loading and management from Hugging Face
+  - Speech generation with phoneme output
   - Voice listing functionality
+  - Automatic espeak-ng configuration
+  - Error handling and logging
 - `tts_demo.py`: Demo script showing basic usage
-  - Command-line interface
-  - Interactive text input
-  - Voice selection
+  - Command-line interface with argparse
+  - Interactive text input mode
+  - Voice selection and listing
+  - Error handling and user feedback
 - `requirements.txt`: Project dependencies
 
 ## Model Information
@@ -101,6 +112,16 @@ The project uses the Kokoro-82M model from Hugging Face:
 - Model file: `kokoro-v0_19.pth`
 - Voice files: Located in the `voices/` directory
 - Supports multiple voice styles (use `--list-voices` to see available options)
+- Automatically downloads required files from Hugging Face
+
+## Technical Details
+
+- Sample rate: 22050Hz
+- Input: Text in any language (English recommended)
+- Output: WAV audio file
+- Dependencies are automatically managed
+- Modules are dynamically loaded from Hugging Face
+- Error handling includes stack traces for debugging
 
 ## Contributing
 
@@ -109,6 +130,7 @@ Feel free to contribute by:
 2. Submitting pull requests with improvements
 3. Helping with documentation
 4. Testing different voices and reporting issues
+5. Suggesting new features or optimizations
 
 ## License
 
