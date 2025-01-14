@@ -1,8 +1,10 @@
 import torch
 import os
+import sys
 from huggingface_hub import hf_hub_download
 import espeakng_loader
 from phonemizer.backend.espeak.wrapper import EspeakWrapper
+from importlib.util import spec_from_file_location, module_from_spec
 
 def setup_espeak():
     """Set up espeak library paths for phonemizer."""
@@ -15,6 +17,18 @@ def setup_espeak():
         print(f"Error setting up espeak: {e}")
         raise e
 
+def import_module_from_path(module_name, module_path):
+    """Import a module from file path."""
+    try:
+        spec = spec_from_file_location(module_name, module_path)
+        module = module_from_spec(spec)
+        sys.modules[module_name] = module
+        spec.loader.exec_module(module)
+        return module
+    except Exception as e:
+        print(f"Error importing module {module_name}: {e}")
+        raise e
+
 def build_model(model_file, device='cpu'):
     """Build the Kokoro model following official implementation."""
     try:
@@ -23,26 +37,23 @@ def build_model(model_file, device='cpu'):
         
         # Download necessary files from Hugging Face
         repo_id = "hexgrad/Kokoro-82M"
-        model_path = hf_hub_download(repo_id=repo_id, filename=model_file)
+        model_path = hf_hub_download(repo_id=repo_id, filename="kokoro-v0_19.pth")
         kokoro_py = hf_hub_download(repo_id=repo_id, filename="kokoro.py")
         models_py = hf_hub_download(repo_id=repo_id, filename="models.py")
         istftnet_py = hf_hub_download(repo_id=repo_id, filename="istftnet.py")
         
-        # Add model directory to Python path
-        model_dir = os.path.dirname(kokoro_py)
-        if model_dir not in os.path.sys.path:
-            os.path.sys.path.insert(0, model_dir)
+        # Import modules dynamically
+        kokoro_module = import_module_from_path("kokoro", kokoro_py)
+        models_module = import_module_from_path("models", models_py)
+        import_module_from_path("istftnet", istftnet_py)
         
         # Test phonemizer
         from phonemizer import phonemize
         test_phonemes = phonemize("Hello")
         print(f"Phonemizer test successful: 'Hello' -> {test_phonemes}")
         
-        # Import the model builder
-        from models import build_model as kokoro_build_model
-        
         # Build and load the model
-        model = kokoro_build_model(model_path, device)
+        model = models_module.build_model(model_path, device)
         print(f"Model loaded successfully on {device}")
         return model
         
