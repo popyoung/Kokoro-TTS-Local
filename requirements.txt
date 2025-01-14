@@ -1,0 +1,8 @@
+torch
+phonemizer
+transformers
+scipy
+munch
+soundfile
+huggingface-hub
+numpy 
