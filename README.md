@@ -1,61 +1,78 @@
-# Kokoro TTS
+# Kokoro TTS Local
 
-A local implementation of the Kokoro Text-to-Speech system, based on the [Kokoro-82M model](https://huggingface.co/hexgrad/Kokoro-82M).
+A local implementation of the Kokoro Text-to-Speech model.
+
+## Current Status
+
+⚠️ **WORK IN PROGRESS** ⚠️
+
+The project is currently being updated to use better dependency management and improved module loading.
 
 ## Features
 
-- High-quality English text-to-speech synthesis
-- Multiple voice styles
-- Adjustable speech speed
-- Local inference without internet dependency (after initial model download)
-- Automatic espeak-ng installation using [espeakng-loader](https://github.com/thewh1teagle/espeakng-loader)
+- Local text-to-speech synthesis using the Kokoro model
+- Automatic espeak-ng setup using espeakng-loader
+- Multiple voice support
+- Phoneme output support
 
-## Prerequisites
+## Dependencies
 
-- Python 3.8 or higher
-- Git LFS (for model download)
-
-## Installation
-
-1. Set up Python environment:
-```bash
-# Create and activate virtual environment
-python -m venv venv
-.\venv\Scripts\activate  # Windows
-source venv/bin/activate  # Linux/Mac
-
-# Install dependencies
-pip install -r requirements.txt
+```txt
+torch
+phonemizer-fork
+transformers
+scipy
+munch
+soundfile
+huggingface-hub
+espeakng-loader
 ```
 
-The espeakng-loader package will automatically handle the installation of espeak-ng.
+## Setup
 
-## Project Structure
+1. Create a virtual environment:
+```powershell
+python -m venv venv
+.\venv\Scripts\activate
+```
 
-- `tts_demo.py` - Demo script showing basic usage
-- `models.py` - Model implementation and utilities
-- `requirements.txt` - Python dependencies
+2. Install dependencies:
+```powershell
+pip install -r requirements.txt
+```
 
 ## Usage
 
 Run the demo script:
-```bash
+```powershell
 python tts_demo.py
 ```
 
-This will:
-1. Automatically install espeak-ng if needed
-2. Download the Kokoro model
-3. Generate a sample audio file
+The script will:
+1. Download necessary model files from Hugging Face
+2. Set up espeak-ng automatically
+3. Generate speech from the test text
 
-## Credits
+## Project Structure
 
-- Original model: [hexgrad/Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M)
-- espeak-ng loader: [espeakng-loader](https://github.com/thewh1teagle/espeakng-loader)
-- Based on papers:
-  - [arxiv: 2306.07691](https://arxiv.org/abs/2306.07691)
-  - [arxiv: 2203.02395](https://arxiv.org/abs/2203.02395)
+- `models.py`: Core model loading and speech generation functionality
+- `tts_demo.py`: Demo script showing basic usage
+- `requirements.txt`: Project dependencies
+
+## Model Information
+
+The project uses the Kokoro-82M model from Hugging Face:
+- Repository: [hexgrad/Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M)
+- Model file: `kokoro-v0_19.pth`
+- Voice files: Located in the `voices/` directory
+
+## Contributing
+
+Feel free to contribute by:
+1. Opening issues for bugs or feature requests
+2. Submitting pull requests with improvements
+3. Helping with documentation
 
 ## License
 
-Apache-2.0 License (following the original model's license) 
+This project is licensed under the Apache 2.0 License. 
