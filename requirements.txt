@@ -5,4 +5,5 @@ scipy
 munch
 soundfile
 huggingface-hub
-numpy 
+numpy
+espeakng-loader 
