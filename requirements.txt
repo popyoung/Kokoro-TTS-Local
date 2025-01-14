@@ -3,7 +3,4 @@ phonemizer
 transformers
 scipy
 munch
-soundfile
-huggingface-hub
-numpy
-espeakng-loader 
+soundfile 
