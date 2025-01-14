@@ -14,6 +14,7 @@ The project is currently being updated to use better dependency management and i
 - Automatic espeak-ng setup using espeakng-loader
 - Multiple voice support
 - Phoneme output support
+- Interactive CLI for custom text input
 
 ## Dependencies
 
@@ -43,15 +44,28 @@ pip install -r requirements.txt
 
 ## Usage
 
-Run the demo script:
+Run the demo script with default text:
 ```powershell
 python tts_demo.py
 ```
 
+Or specify your own text:
+```powershell
+python tts_demo.py --text "Your custom text here"
+```
+
+You can also choose a different voice:
+```powershell
+python tts_demo.py --voice "af" --text "Custom text with specific voice"
+```
+
+If you run without any arguments, you'll be prompted to enter text interactively.
+
 The script will:
 1. Download necessary model files from Hugging Face
 2. Set up espeak-ng automatically
-3. Generate speech from the test text
+3. Generate speech from your text
+4. Save the output as 'output.wav'
 
 ## Project Structure
 
