@@ -1,7 +1,7 @@
 import torch
 import os
 import sys
-from huggingface_hub import hf_hub_download
+from huggingface_hub import hf_hub_download, list_repo_files
 import espeakng_loader
 from phonemizer.backend.espeak.wrapper import EspeakWrapper
 from importlib.util import spec_from_file_location, module_from_spec
@@ -93,3 +93,16 @@ def generate_speech(model, text, voice=None, lang='a', device='cpu'):
         import traceback
         traceback.print_exc()
         return None, None 
+
+def list_available_voices():
+    """List all available voices from the official voicepacks."""
+    try:
+        repo_id = "hexgrad/Kokoro-82M"
+        files = list_repo_files(repo_id)
+        # Filter for voice files in the voices directory and remove .pt extension
+        voices = [f.replace('voices/', '').replace('.pt', '') 
+                 for f in files if f.startswith('voices/') and f.endswith('.pt')]
+        return sorted(voices)
+    except Exception as e:
+        print(f"Error listing voices: {e}")
+        return [] 

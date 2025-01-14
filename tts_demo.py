@@ -1,5 +1,5 @@
 import torch
-from models import build_model, load_voice, generate_speech
+from models import build_model, load_voice, generate_speech, list_available_voices
 import argparse
 
 def main():
@@ -8,7 +8,15 @@ def main():
         parser = argparse.ArgumentParser(description='Kokoro TTS Demo')
         parser.add_argument('--text', type=str, help='Text to synthesize (optional)')
         parser.add_argument('--voice', type=str, default='af', help='Voice to use (default: af)')
+        parser.add_argument('--list-voices', action='store_true', help='List all available voices')
         args = parser.parse_args()
+
+        if args.list_voices:
+            voices = list_available_voices()
+            print("\nAvailable voices:")
+            for voice in voices:
+                print(f"- {voice}")
+            return
 
         # Set up device
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
