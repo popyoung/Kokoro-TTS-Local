@@ -42,10 +42,13 @@ def build_model(model_file, device='cpu'):
         models_py = hf_hub_download(repo_id=repo_id, filename="models.py")
         istftnet_py = hf_hub_download(repo_id=repo_id, filename="istftnet.py")
         
-        # Import modules dynamically
-        kokoro_module = import_module_from_path("kokoro", kokoro_py)
+        # Import modules in correct dependency order
+        print("Importing istftnet module...")
+        istftnet_module = import_module_from_path("istftnet", istftnet_py)
+        print("Importing models module...")
         models_module = import_module_from_path("models", models_py)
-        import_module_from_path("istftnet", istftnet_py)
+        print("Importing kokoro module...")
+        kokoro_module = import_module_from_path("kokoro", kokoro_py)
         
         # Test phonemizer
         from phonemizer import phonemize
@@ -53,6 +56,7 @@ def build_model(model_file, device='cpu'):
         print(f"Phonemizer test successful: 'Hello' -> {test_phonemes}")
         
         # Build and load the model
+        print("Building model...")
         model = models_module.build_model(model_path, device)
         print(f"Model loaded successfully on {device}")
         return model
