@@ -11,6 +11,7 @@ The project has been updated with:
 - Dynamic module loading from Hugging Face
 - Improved error handling and debugging
 - Interactive CLI interface
+- Cross-platform setup scripts
 
 ## Features
 
@@ -22,6 +23,13 @@ The project has been updated with:
 - Voice listing functionality
 - Dynamic module loading from Hugging Face
 - Comprehensive error handling and logging
+- Cross-platform support (Windows, Linux, macOS)
+
+## Prerequisites
+
+- Python 3.8 or higher
+- Git (for cloning the repository)
+- Internet connection (for initial model download)
 
 ## Dependencies
 
@@ -38,14 +46,36 @@ espeakng-loader
 
 ## Setup
 
-1. Create a virtual environment:
+### Windows
+Run the PowerShell setup script:
 ```powershell
+.\setup.ps1
+```
+
+### Linux/macOS
+Run the bash setup script:
+```bash
+chmod +x setup.sh
+./setup.sh
+```
+
+### Manual Setup
+If you prefer to set up manually:
+
+1. Create a virtual environment:
+```bash
+# Windows
 python -m venv venv
 .\venv\Scripts\activate
+
+# Linux/macOS
+python3 -m venv venv
+source venv/bin/activate
 ```
 
 2. Install dependencies:
-```powershell
+```bash
+python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
@@ -53,31 +83,31 @@ pip install -r requirements.txt
 
 ### List Available Voices
 To see all available voices from the Hugging Face repository:
-```powershell
+```bash
 python tts_demo.py --list-voices
 ```
 
 ### Basic Usage
 Run the demo script with default text and voice:
-```powershell
+```bash
 python tts_demo.py
 ```
 
 ### Custom Text
 Specify your own text:
-```powershell
+```bash
 python tts_demo.py --text "Your custom text here"
 ```
 
 ### Voice Selection
 Choose a different voice (use --list-voices to see available options):
-```powershell
+```bash
 python tts_demo.py --voice "af" --text "Custom text with specific voice"
 ```
 
 ### Interactive Mode
 If you run without any arguments, you'll be prompted to enter text interactively:
-```powershell
+```bash
 python tts_demo.py
 ```
 
@@ -103,6 +133,14 @@ The script will:
   - Interactive text input mode
   - Voice selection and listing
   - Error handling and user feedback
+- `setup.ps1`: Windows PowerShell setup script
+  - Environment creation
+  - Dependency installation
+  - Automatic configuration
+- `setup.sh`: Linux/macOS bash setup script
+  - Environment creation
+  - Dependency installation
+  - Automatic configuration
 - `requirements.txt`: Project dependencies
 
 ## Model Information
@@ -122,6 +160,7 @@ The project uses the Kokoro-82M model from Hugging Face:
 - Dependencies are automatically managed
 - Modules are dynamically loaded from Hugging Face
 - Error handling includes stack traces for debugging
+- Cross-platform compatibility through setup scripts
 
 ## Contributing
 
@@ -131,6 +170,7 @@ Feel free to contribute by:
 3. Helping with documentation
 4. Testing different voices and reporting issues
 5. Suggesting new features or optimizations
+6. Testing on different platforms and reporting results
 
 ## License
 
