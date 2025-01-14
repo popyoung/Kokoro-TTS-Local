@@ -12,9 +12,10 @@ The project is currently being updated to use better dependency management and i
 
 - Local text-to-speech synthesis using the Kokoro model
 - Automatic espeak-ng setup using espeakng-loader
-- Multiple voice support
+- Multiple voice support with easy voice selection
 - Phoneme output support
 - Interactive CLI for custom text input
+- Voice listing functionality
 
 ## Dependencies
 
@@ -44,22 +45,35 @@ pip install -r requirements.txt
 
 ## Usage
 
-Run the demo script with default text:
+### List Available Voices
+To see all available voices:
+```powershell
+python tts_demo.py --list-voices
+```
+
+### Basic Usage
+Run the demo script with default text and voice:
 ```powershell
 python tts_demo.py
 ```
 
-Or specify your own text:
+### Custom Text
+Specify your own text:
 ```powershell
 python tts_demo.py --text "Your custom text here"
 ```
 
-You can also choose a different voice:
+### Voice Selection
+Choose a different voice:
 ```powershell
 python tts_demo.py --voice "af" --text "Custom text with specific voice"
 ```
 
-If you run without any arguments, you'll be prompted to enter text interactively.
+### Interactive Mode
+If you run without any arguments, you'll be prompted to enter text interactively:
+```powershell
+python tts_demo.py
+```
 
 The script will:
 1. Download necessary model files from Hugging Face
@@ -70,7 +84,14 @@ The script will:
 ## Project Structure
 
 - `models.py`: Core model loading and speech generation functionality
+  - Model building and initialization
+  - Voice loading and management
+  - Speech generation
+  - Voice listing functionality
 - `tts_demo.py`: Demo script showing basic usage
+  - Command-line interface
+  - Interactive text input
+  - Voice selection
 - `requirements.txt`: Project dependencies
 
 ## Model Information
@@ -79,6 +100,7 @@ The project uses the Kokoro-82M model from Hugging Face:
 - Repository: [hexgrad/Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M)
 - Model file: `kokoro-v0_19.pth`
 - Voice files: Located in the `voices/` directory
+- Supports multiple voice styles (use `--list-voices` to see available options)
 
 ## Contributing
 
@@ -86,6 +108,7 @@ Feel free to contribute by:
 1. Opening issues for bugs or feature requests
 2. Submitting pull requests with improvements
 3. Helping with documentation
+4. Testing different voices and reporting issues
 
 ## License
 
