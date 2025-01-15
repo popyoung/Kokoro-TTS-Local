@@ -1,20 +1,77 @@
 import torch
 import os
 import sys
+import platform
+import glob
 from huggingface_hub import hf_hub_download, list_repo_files
 import espeakng_loader
 from phonemizer.backend.espeak.wrapper import EspeakWrapper
 from importlib.util import spec_from_file_location, module_from_spec
 
+__all__ = ['list_available_voices', 'build_model', 'load_voice', 'generate_speech']
+
+def list_available_voices():
+    """List all available voices from the official voicepacks."""
+    return ["af", "af_bella", "af_sarah", "am_adam", "am_michael"]
+
+def get_platform_paths():
+    """Get platform-specific paths for espeak-ng"""
+    system = platform.system().lower()
+    
+    if system == "windows":
+        lib_path = os.path.join(os.getenv("ProgramFiles"), "eSpeak NG", "libespeak-ng.dll")
+        data_path = os.path.join(os.getenv("ProgramFiles"), "eSpeak NG", "espeak-ng-data")
+    
+    elif system == "darwin":  # macOS
+        lib_path = "/opt/homebrew/lib/libespeak-ng.dylib"
+        brew_data = "/opt/homebrew/share/espeak-ng-data"
+        sys_lib = "/usr/local/lib/libespeak-ng.dylib"
+        sys_data = "/usr/local/share/espeak-ng-data"
+        lib_path = lib_path if os.path.exists(lib_path) else sys_lib
+        data_path = brew_data if os.path.exists(brew_data) else sys_data
+    
+    else:  # Linux
+        data_path = "/usr/lib/x86_64-linux-gnu/espeak-ng-data"
+        lib_paths = [
+            "/lib/x86_64-linux-gnu/libespeak-ng.so.1",
+            "/usr/lib/x86_64-linux-gnu/libespeak-ng.so",
+            "/usr/lib/libespeak-ng.so",
+            "/usr/lib/x86_64-linux-gnu/libespeak-ng.so.1",
+            "/usr/lib/aarch64-linux-gnu/libespeak-ng.so",
+            "/usr/lib64/libespeak-ng.so"
+        ]
+        
+        lib_path = None
+        for path in lib_paths:
+            if os.path.exists(path):
+                lib_path = path
+                break
+        
+        if lib_path is None:
+            lib_path = lib_paths[0]  # Default for error message
+    
+    return lib_path, data_path
+
 def setup_espeak():
     """Set up espeak library paths for phonemizer."""
     try:
-        # Set up espeak library paths
-        EspeakWrapper.set_library(espeakng_loader.get_library_path())
-        EspeakWrapper.set_data_path(espeakng_loader.get_data_path())
+        lib_path, data_path = get_platform_paths()
+        
+        if not os.path.exists(lib_path):
+            raise FileNotFoundError(f"espeak-ng library not found at {lib_path}")
+        if not os.path.exists(data_path):
+            raise FileNotFoundError(f"espeak-ng data not found at {data_path}")
+            
+        EspeakWrapper.set_library(lib_path)
+        EspeakWrapper.data_path = data_path
         print("espeak-ng library paths set up successfully")
+        
     except Exception as e:
         print(f"Error setting up espeak: {e}")
+        print("\nPlease ensure espeak-ng is installed:")
+        print("- Windows: Download from https://github.com/espeak-ng/espeak-ng/releases")
+        print("- macOS: brew install espeak-ng")
+        print("- Linux: sudo apt install espeak-ng")
         raise e
 
 def import_module_from_path(module_name, module_path):
@@ -32,19 +89,15 @@ def import_module_from_path(module_name, module_path):
 def build_model(model_file, device='cpu'):
     """Build the Kokoro model following official implementation."""
     try:
-        # Set up espeak first
         setup_espeak()
         
-        # Download necessary files from Hugging Face
         repo_id = "hexgrad/Kokoro-82M"
         model_path = hf_hub_download(repo_id=repo_id, filename="kokoro-v0_19.pth")
         kokoro_py = hf_hub_download(repo_id=repo_id, filename="kokoro.py")
         models_py = hf_hub_download(repo_id=repo_id, filename="models.py")
         istftnet_py = hf_hub_download(repo_id=repo_id, filename="istftnet.py")
         plbert_py = hf_hub_download(repo_id=repo_id, filename="plbert.py")
-        config_path = hf_hub_download(repo_id=repo_id, filename="config.json")
         
-        # Import modules in correct dependency order
         print("Importing plbert module...")
         plbert_module = import_module_from_path("plbert", plbert_py)
         print("Importing istftnet module...")
@@ -54,12 +107,10 @@ def build_model(model_file, device='cpu'):
         print("Importing kokoro module...")
         kokoro_module = import_module_from_path("kokoro", kokoro_py)
         
-        # Test phonemizer
         from phonemizer import phonemize
         test_phonemes = phonemize("Hello")
         print(f"Phonemizer test successful: 'Hello' -> {test_phonemes}")
         
-        # Build and load the model
         print("Building model...")
         model = models_module.build_model(model_path, device)
         print(f"Model loaded successfully on {device}")
@@ -93,17 +144,4 @@ def generate_speech(model, text, voice=None, lang='a', device='cpu'):
         print(f"Error generating speech: {e}")
         import traceback
         traceback.print_exc()
-        return None, None 
-
-def list_available_voices():
-    """List all available voices from the official voicepacks."""
-    try:
-        repo_id = "hexgrad/Kokoro-82M"
-        files = list_repo_files(repo_id)
-        # Filter for voice files in the voices directory and remove .pt extension
-        voices = [f.replace('voices/', '').replace('.pt', '') 
-                 for f in files if f.startswith('voices/') and f.endswith('.pt')]
-        return sorted(voices)
-    except Exception as e:
-        print(f"Error listing voices: {e}")
-        return [] 
+        return None, None
