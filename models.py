@@ -42,6 +42,7 @@ def build_model(model_file, device='cpu'):
         models_py = hf_hub_download(repo_id=repo_id, filename="models.py")
         istftnet_py = hf_hub_download(repo_id=repo_id, filename="istftnet.py")
         plbert_py = hf_hub_download(repo_id=repo_id, filename="plbert.py")
+        config_path = hf_hub_download(repo_id=repo_id, filename="config.json")
         
         # Import modules in correct dependency order
         print("Importing plbert module...")
