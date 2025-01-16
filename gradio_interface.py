@@ -19,7 +19,6 @@ Dependencies:
 """
 
 import gradio as gr
-import subprocess
 import os
 import sys
 import platform
@@ -28,11 +27,20 @@ import shutil
 from pathlib import Path
 import soundfile as sf
 from pydub import AudioSegment
-from models import list_available_voices
+import torch
+from models import (
+    list_available_voices, build_model, load_voice,
+    generate_speech, load_and_validate_voice
+)
 
 # Global configuration
 CONFIG_FILE = "tts_config.json"  # Stores user preferences and paths
 DEFAULT_OUTPUT_DIR = "outputs"    # Directory for generated audio files
+SAMPLE_RATE = 22050
+
+# Initialize model globally
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+model = None
 
 def get_available_voices():
     """Get list of available voice models."""
@@ -59,57 +67,55 @@ def convert_audio(input_path: str, output_path: str, format: str):
         print(f"Error converting audio: {e}")
         return False
 
-def generate_tts_with_logs(voice, text, format):
+def generate_tts_with_logs(voice_name, text, format):
     """Generate TTS audio with real-time logging and format conversion."""
+    global model
+    
     if not text.strip():
         return "❌ Error: Text required", None
     
     logs_text = ""
     try:
-        # Use sys.executable to ensure correct Python interpreter
-        cmd = [sys.executable, "tts_demo.py", "--text", text, "--voice", voice]
+        # Initialize model if not done yet
+        if model is None:
+            logs_text += "Loading model...\n"
+            model = build_model("kokoro-v0_19.pth", device)
         
-        # Use shell=True on Windows
-        shell = platform.system().lower() == "windows"
+        # Load voice
+        logs_text += f"Loading voice: {voice_name}\n"
+        yield logs_text, None
+        voice = load_and_validate_voice(voice_name, device)
         
-        process = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            universal_newlines=True,
-            shell=shell
-        )
+        # Generate speech
+        logs_text += f"Generating speech for: '{text}'\n"
+        yield logs_text, None
+        audio, phonemes = generate_speech(model, text, voice, lang='a', device=device)
         
-        while True:
-            output = process.stdout.readline()
-            if output == '' and process.poll() is not None:
-                break
-            if output:
-                logs_text += output
-                yield logs_text, None
-        
-        if process.returncode != 0:
-            logs_text += "❌ Generation failed\n"
-            yield logs_text, None
-            return
+        if audio is not None and phonemes:
+            try:
+                logs_text += f"Generated phonemes: {phonemes}\n"
+            except UnicodeEncodeError:
+                logs_text += "Generated phonemes: [Unicode display error]\n"
             
-        if not os.path.exists("output.wav"):
-            logs_text += "❌ No output generated\n"
-            yield logs_text, None
-            return
-
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"output_{timestamp}.{format}"
-        os.makedirs(DEFAULT_OUTPUT_DIR, exist_ok=True)
-        output_path = Path(DEFAULT_OUTPUT_DIR) / filename
-        
-        # Convert audio using pydub
-        if convert_audio("output.wav", str(output_path), format):
-            logs_text += f"✅ Saved: {output_path}\n"
-            os.remove("output.wav")
-            yield logs_text, str(output_path)
+            # Save temporary WAV file
+            temp_wav = "output.wav"
+            sf.write(temp_wav, audio, SAMPLE_RATE)
+            
+            # Convert to desired format
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"output_{timestamp}.{format}"
+            os.makedirs(DEFAULT_OUTPUT_DIR, exist_ok=True)
+            output_path = Path(DEFAULT_OUTPUT_DIR) / filename
+            
+            if convert_audio(temp_wav, str(output_path), format):
+                logs_text += f"✅ Saved: {output_path}\n"
+                os.remove(temp_wav)
+                yield logs_text, str(output_path)
+            else:
+                logs_text += "❌ Audio conversion failed\n"
+                yield logs_text, None
         else:
-            logs_text += "❌ Audio conversion failed\n"
+            logs_text += "❌ Failed to generate audio\n"
             yield logs_text, None
 
     except Exception as e:
@@ -180,7 +186,7 @@ def create_interface(server_name="0.0.0.0", server_port=7860):
                     voice = gr.Dropdown(
                         choices=get_available_voices(),
                         label="🗣️ Select Voice",
-                        value=None
+                        value="af_bella"
                     )
                     format = gr.Radio(
                         choices=["wav", "mp3", "aac"],

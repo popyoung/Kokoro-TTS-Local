@@ -87,10 +87,18 @@ def main() -> None:
             pbar.update(1)
         
         if audio is not None:
-            print(f"Generated phonemes: {phonemes}")
-            output_path = Path(args.output)
-            sf.write(output_path, audio, SAMPLE_RATE)
-            print(f"\nAudio saved to {output_path.absolute()}")
+            try:
+                if phonemes:
+                    try:
+                        print(f"Generated phonemes: {phonemes}")
+                    except UnicodeEncodeError:
+                        print("Generated phonemes: [Unicode display error - phonemes were generated but cannot be displayed]")
+                output_path = Path(args.output)
+                sf.write(output_path, audio, SAMPLE_RATE)
+                print(f"\nAudio saved to {output_path.absolute()}")
+            except Exception as e:
+                print(f"Error saving output: {e}")
+                print("Audio generation was successful, but saving failed.")
         else:
             print("Error: Failed to generate audio")
         

@@ -15,12 +15,30 @@ warnings.filterwarnings("ignore", category=FutureWarning, module="torch.nn.utils
 warnings.filterwarnings("ignore", category=UserWarning, module="torch.nn.modules.rnn")
 os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
 
-__all__ = ['list_available_voices', 'build_model', 'load_voice', 'generate_speech']
+__all__ = ['list_available_voices', 'build_model', 'load_voice', 'generate_speech', 'load_and_validate_voice']
 
 def get_voices_path():
     """Get the path where voice files are stored."""
     # Store voices in a 'voices' directory in the project root
     return str(Path(__file__).parent / "voices")
+
+def load_and_validate_voice(voice_name: str, device: str) -> torch.Tensor:
+    """Load and validate the requested voice.
+    
+    Args:
+        voice_name: Name of the voice to load
+        device: Device to load the voice on ('cuda' or 'cpu')
+        
+    Returns:
+        Loaded voice tensor
+        
+    Raises:
+        ValueError: If the requested voice doesn't exist
+    """
+    available_voices = list_available_voices()
+    if voice_name not in available_voices:
+        raise ValueError(f"Voice '{voice_name}' not found. Available voices: {', '.join(available_voices)}")
+    return load_voice(voice_name, device)
 
 def list_available_voices():
     """List all available voices from the official voicepacks."""
@@ -109,6 +127,12 @@ def setup_espeak():
             
         EspeakWrapper.set_library(lib_path)
         EspeakWrapper.data_path = data_path
+        
+        # Configure phonemizer for UTF-8
+        os.environ["PHONEMIZER_ESPEAK_LIBRARY"] = lib_path
+        os.environ["PHONEMIZER_ESPEAK_PATH"] = data_path
+        os.environ["PYTHONIOENCODING"] = "utf-8"
+        
         print("espeak-ng library paths set up successfully")
         
     except Exception as e:
@@ -203,7 +227,37 @@ def generate_speech(model, text, voice=None, lang='a', device='cpu'):
         kokoro_py = hf_hub_download(repo_id=repo_id, filename="kokoro.py")
         kokoro_module = import_module_from_path("kokoro", kokoro_py)
         
+        # Generate speech
         audio, phonemes = kokoro_module.generate(model, text, voice, lang=lang)
+        
+        # Handle phonemes encoding
+        if phonemes:
+            try:
+                # Debug info
+                print(f"Debug - Original phonemes type: {type(phonemes)}")
+                print(f"Debug - Original phonemes: {repr(phonemes)}")
+                
+                # Convert to string if it's bytes
+                if isinstance(phonemes, bytes):
+                    phonemes = phonemes.decode('utf-8', errors='replace')
+                # If it's a string, ensure it's valid UTF-8
+                elif isinstance(phonemes, str):
+                    # Replace problematic characters with their ASCII approximations
+                    replacements = {
+                        'É™': 'ə',
+                        'ÊŠ': 'ʊ',
+                        'Ê': 'ʃ',
+                        'æ': 'ae'
+                    }
+                    for old, new in replacements.items():
+                        phonemes = phonemes.replace(old, new)
+                
+                print(f"Debug - Processed phonemes: {repr(phonemes)}")
+            except Exception as e:
+                print(f"Debug - Encoding error: {str(e)}")
+                # Last resort: strip to ASCII
+                phonemes = ''.join(c for c in str(phonemes) if ord(c) < 128)
+        
         return audio, phonemes
     except Exception as e:
         print(f"Error generating speech: {e}")
