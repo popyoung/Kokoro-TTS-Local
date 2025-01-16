@@ -219,7 +219,11 @@ The project uses the Kokoro-82M model from Hugging Face:
 - Repository: [hexgrad/Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M)
 - Model file: `kokoro-v0_19.pth`
 - Voice files: Located in the `voices/` directory
-- Supports multiple voice styles (use `--list-voices` to see available options)
+- Available voices:
+  - African Female: `af_bella`, `af_nicole`, `af_sarah`, `af_sky`
+  - African Male: `am_adam`, `am_michael`
+  - British Female: `bf_emma`, `bf_isabella`
+  - British Male: `bm_george`, `bm_lewis`
 - Automatically downloads required files from Hugging Face
 
 ## Technical Details

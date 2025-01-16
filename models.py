@@ -29,15 +29,20 @@ def list_available_voices():
         if not os.path.exists(voices_path):
             print("Downloading voice files...")
             repo_id = "hexgrad/Kokoro-82M"
-            for voice in ["af", "af_bella", "af_sarah", "am_adam", "am_michael"]:
+            repo_files = list_repo_files(repo_id)
+            voice_files = [f for f in repo_files if f.startswith('voices/') and f.endswith('.pt')]
+            
+            for voice_file in voice_files:
                 try:
+                    voice_name = os.path.splitext(os.path.basename(voice_file))[0]
+                    print(f"Downloading voice: {voice_name}")
                     hf_hub_download(
                         repo_id=repo_id,
-                        filename=f"voices/{voice}.pt",
+                        filename=voice_file,
                         local_dir=str(Path(voices_path).parent.parent.parent)
                     )
                 except Exception as e:
-                    print(f"Error downloading voice {voice}: {e}")
+                    print(f"Error downloading voice {voice_file}: {e}")
         
         # List available voice files
         if os.path.exists(voices_path):
@@ -46,8 +51,9 @@ def list_available_voices():
     except Exception as e:
         print(f"Error accessing voices: {e}")
     
-    # Fallback to default voices if download fails
-    return ["af", "af_bella", "af_sarah", "am_adam", "am_michael"]
+    # Fallback to default voices if everything fails
+    return ["af_bella", "af_nicole", "af_sarah", "af_sky", "am_adam", "am_michael", 
+            "bf_emma", "bf_isabella", "bm_george", "bm_lewis"]
 
 def get_platform_paths():
     """Get platform-specific paths for espeak-ng"""
