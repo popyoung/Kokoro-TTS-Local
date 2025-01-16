@@ -127,12 +127,15 @@ def build_model(model_file, device='cpu'):
         setup_espeak()
         
         repo_id = "hexgrad/Kokoro-82M"
+        # Download all required files
         model_path = hf_hub_download(repo_id=repo_id, filename="kokoro-v0_19.pth")
         kokoro_py = hf_hub_download(repo_id=repo_id, filename="kokoro.py")
         models_py = hf_hub_download(repo_id=repo_id, filename="models.py")
         istftnet_py = hf_hub_download(repo_id=repo_id, filename="istftnet.py")
         plbert_py = hf_hub_download(repo_id=repo_id, filename="plbert.py")
+        config_json = hf_hub_download(repo_id=repo_id, filename="config.json")
         
+        # Import required modules
         print("Importing plbert module...")
         plbert_module = import_module_from_path("plbert", plbert_py)
         print("Importing istftnet module...")
@@ -142,10 +145,12 @@ def build_model(model_file, device='cpu'):
         print("Importing kokoro module...")
         kokoro_module = import_module_from_path("kokoro", kokoro_py)
         
+        # Test phonemizer
         from phonemizer import phonemize
         test_phonemes = phonemize("Hello")
         print(f"Phonemizer test successful: 'Hello' -> {test_phonemes}")
         
+        # Build model
         print("Building model...")
         model = models_module.build_model(model_path, device)
         print(f"Model loaded successfully on {device}")

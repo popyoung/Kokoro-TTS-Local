@@ -44,6 +44,23 @@ The project has been updated with:
   - Linux: `sudo apt-get install ffmpeg`
   - macOS: `brew install ffmpeg`
 
+### Windows-Specific Requirements
+For optimal performance on Windows, you should either:
+1. Enable Developer Mode:
+   - Open Windows Settings
+   - Navigate to System > Developer settings
+   - Turn on Developer Mode
+   
+OR
+
+2. Run Python as Administrator:
+   - Right-click your terminal (PowerShell/Command Prompt)
+   - Select "Run as administrator"
+   - Run the commands from there
+
+This is needed for proper symlink support in the Hugging Face cache system.
+If you skip this, the system will still work but may use more disk space.
+
 ## Dependencies
 
 ```txt
