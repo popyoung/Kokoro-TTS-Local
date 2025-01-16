@@ -28,28 +28,16 @@ import shutil
 from pathlib import Path
 import soundfile as sf
 from pydub import AudioSegment
+from models import list_available_voices
 
 # Global configuration
 CONFIG_FILE = "tts_config.json"  # Stores user preferences and paths
 DEFAULT_OUTPUT_DIR = "outputs"    # Directory for generated audio files
 
-def get_default_voices_path():
-    """Get OS-agnostic path to voice models directory."""
-    system = platform.system().lower()
-    if system == "windows":
-        base = os.getenv("APPDATA", os.path.expanduser("~"))
-        return str(Path(base) / "huggingface" / "hub" / "models--hexgrad--Kokoro-82M" / "voices")
-    else:  # Linux and macOS
-        return str(Path.home() / ".cache" / "huggingface" / "hub" / "models--hexgrad--Kokoro-82M" / "voices")
-
 def get_available_voices():
-    """Get list of available voice models by checking the directory."""
-    voices_path = get_default_voices_path()
+    """Get list of available voice models."""
     try:
-        if not os.path.exists(voices_path):
-            print(f"Voices directory not found: {voices_path}")
-            return []
-        voices = [os.path.splitext(f)[0] for f in os.listdir(voices_path) if f.endswith('.pt')]
+        voices = list_available_voices()
         print("Available voices:", voices)
         return voices
     except Exception as e:

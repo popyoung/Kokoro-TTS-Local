@@ -7,11 +7,46 @@ from huggingface_hub import hf_hub_download, list_repo_files
 import espeakng_loader
 from phonemizer.backend.espeak.wrapper import EspeakWrapper
 from importlib.util import spec_from_file_location, module_from_spec
+from pathlib import Path
 
 __all__ = ['list_available_voices', 'build_model', 'load_voice', 'generate_speech']
 
+def get_voices_path():
+    """Get the path where voice files are stored."""
+    system = platform.system().lower()
+    if system == "windows":
+        base = os.getenv("APPDATA", os.path.expanduser("~"))
+    else:  # Linux and macOS
+        base = str(Path.home() / ".cache")
+    
+    return str(Path(base) / "huggingface" / "hub" / "models--hexgrad--Kokoro-82M" / "snapshots" / "main" / "voices")
+
 def list_available_voices():
     """List all available voices from the official voicepacks."""
+    voices_path = get_voices_path()
+    try:
+        # Download voices if they don't exist
+        if not os.path.exists(voices_path):
+            print("Downloading voice files...")
+            repo_id = "hexgrad/Kokoro-82M"
+            for voice in ["af", "af_bella", "af_sarah", "am_adam", "am_michael"]:
+                try:
+                    hf_hub_download(
+                        repo_id=repo_id,
+                        filename=f"voices/{voice}.pt",
+                        local_dir=str(Path(voices_path).parent.parent.parent)
+                    )
+                except Exception as e:
+                    print(f"Error downloading voice {voice}: {e}")
+        
+        # List available voice files
+        if os.path.exists(voices_path):
+            voices = [os.path.splitext(f)[0] for f in os.listdir(voices_path) if f.endswith('.pt')]
+            return sorted(voices)
+    except Exception as e:
+        print(f"Error accessing voices: {e}")
+    
+    # Fallback to default voices if download fails
     return ["af", "af_bella", "af_sarah", "am_adam", "am_michael"]
 
 def get_platform_paths():

@@ -69,6 +69,9 @@ cd Kokoro-TTS-Local
 
 # Run the setup script
 .\setup.ps1
+
+# Download initial model and voices
+python tts_demo.py --list-voices
 ```
 
 ### Linux/macOS
@@ -86,6 +89,9 @@ chmod +x setup.sh
 sudo apt-get install ffmpeg
 # macOS:
 brew install ffmpeg
+
+# Download initial model and voices
+python tts_demo.py --list-voices
 ```
 
 ### Manual Setup
@@ -119,6 +125,12 @@ sudo apt-get install espeak-ng ffmpeg
 
 # macOS
 brew install espeak ffmpeg
+```
+
+4. Download initial model and voices:
+```bash
+# This will download the model and voices from Hugging Face
+python tts_demo.py --list-voices
 ```
 
 ## Usage
