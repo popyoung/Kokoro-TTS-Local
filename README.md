@@ -128,15 +128,19 @@ brew install espeak ffmpeg
 # Start the web interface
 python gradio_interface.py
 ```
-This will:
-1. Launch a web interface at http://localhost:7860
-2. Create a public share link (optional)
-3. Allow you to:
+
+After running the command:
+1. Open your web browser and visit: http://localhost:7860
+2. The interface will also create a public share link (optional)
+3. You can now:
    - Input text to synthesize
    - Select from available voices
    - Choose output format (WAV/MP3/AAC)
    - Monitor generation progress
    - Play or download generated audio
+
+Note: If port 7860 is already in use, Gradio will automatically try the next available port (7861, 7862, etc.).
+Check the terminal output for the correct URL.
 
 ### Command Line Interface
 ```bash
