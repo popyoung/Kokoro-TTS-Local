@@ -2,7 +2,7 @@ import torch
 from typing import Optional, Tuple, List
 from models import build_model, load_voice, generate_speech, list_available_voices
 import argparse
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import soundfile as sf
 from pathlib import Path
 
@@ -12,6 +12,9 @@ DEFAULT_MODEL_PATH = 'kokoro-v0_19.pth'
 DEFAULT_OUTPUT_FILE = 'output.wav'
 DEFAULT_LANGUAGE = 'a'  # TODO: Document why this is 'a' or make configurable
 DEFAULT_TEXT = "Hello, welcome to this text-to-speech test."
+
+# Configure tqdm for better Windows console support
+tqdm.monitor_interval = 0  # Disable monitor thread to prevent encoding issues
 
 def load_and_validate_voice(voice_name: str, device: str) -> torch.Tensor:
     """Load and validate the requested voice.
@@ -36,7 +39,7 @@ def main() -> None:
         # Parse command line arguments
         parser = argparse.ArgumentParser(description='Kokoro TTS Demo')
         parser.add_argument('--text', type=str, help='Text to synthesize (optional)')
-        parser.add_argument('--voice', type=str, default='af', help='Voice to use (default: af)')
+        parser.add_argument('--voice', type=str, default='af_bella', help='Voice to use (default: af_bella)')
         parser.add_argument('--list-voices', action='store_true', help='List all available voices')
         parser.add_argument('--model', type=str, default=DEFAULT_MODEL_PATH, help=f'Path to model file (default: {DEFAULT_MODEL_PATH})')
         parser.add_argument('--output', type=str, default=DEFAULT_OUTPUT_FILE, help=f'Output WAV file (default: {DEFAULT_OUTPUT_FILE})')
