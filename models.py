@@ -199,8 +199,11 @@ def load_voice(voice_name='af_bella', device='cpu'):
 def generate_speech(model, text, voice=None, lang='a', device='cpu'):
     """Generate speech using the Kokoro model."""
     try:
-        from kokoro import generate
-        audio, phonemes = generate(model, text, voice, lang=lang)
+        repo_id = "hexgrad/Kokoro-82M"
+        kokoro_py = hf_hub_download(repo_id=repo_id, filename="kokoro.py")
+        kokoro_module = import_module_from_path("kokoro", kokoro_py)
+        
+        audio, phonemes = kokoro_module.generate(model, text, voice, lang=lang)
         return audio, phonemes
     except Exception as e:
         print(f"Error generating speech: {e}")
