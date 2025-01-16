@@ -14,18 +14,20 @@ Key Features:
 Dependencies:
 - gradio: Web interface framework
 - soundfile: Audio file handling
+- pydub: Audio format conversion
 - models: Custom module for voice model management
 """
 
 import gradio as gr
 import subprocess
 import os
+import sys
 import platform
 from datetime import datetime
 import shutil
-import json
-import soundfile as sf
 from pathlib import Path
+import soundfile as sf
+from pydub import AudioSegment
 
 # Global configuration
 CONFIG_FILE = "tts_config.json"  # Stores user preferences and paths
@@ -42,51 +44,52 @@ def get_default_voices_path():
 
 def get_available_voices():
     """Get list of available voice models by checking the directory."""
-    voices_path = get_default_voices_path()  # Use platform-agnostic path
+    voices_path = get_default_voices_path()
     try:
-        # List all files in the directory and filter by .pt extension
+        if not os.path.exists(voices_path):
+            print(f"Voices directory not found: {voices_path}")
+            return []
         voices = [os.path.splitext(f)[0] for f in os.listdir(voices_path) if f.endswith('.pt')]
-        print("Available voices:", voices)  # Debugging log
+        print("Available voices:", voices)
         return voices
     except Exception as e:
         print(f"Error retrieving voices: {e}")
-        return []  # Return an empty list if there's an error
+        return []
+
+def convert_audio(input_path: str, output_path: str, format: str):
+    """Convert audio to specified format using pydub."""
+    try:
+        audio = AudioSegment.from_wav(input_path)
+        if format == "mp3":
+            audio.export(output_path, format="mp3", bitrate="192k")
+        elif format == "aac":
+            audio.export(output_path, format="aac", bitrate="192k")
+        else:  # wav
+            shutil.copy2(input_path, output_path)
+        return True
+    except Exception as e:
+        print(f"Error converting audio: {e}")
+        return False
 
 def generate_tts_with_logs(voice, text, format):
-    """Generate TTS audio with real-time logging and format conversion.
-    
-    This function:
-    1. Validates input text
-    2. Runs TTS generation subprocess
-    3. Streams progress logs in real-time
-    4. Converts output to requested format
-    5. Saves with timestamp in output directory
-    
-    Args:
-        voice (str): Selected voice model identifier (e.g., "af", "af_bella")
-        text (str): Input text to synthesize
-        format (str): Output audio format ("wav", "mp3", or "aac")
-    
-    Yields:
-        tuple: (log_text, output_path)
-            - log_text (str): Accumulated process logs
-            - output_path (str): Path to generated audio file, or None on error
-    
-    Notes:
-        - Temporary WAV file is created and deleted after conversion
-        - Output filename includes timestamp to prevent overwrites
-        - Errors are caught and reported in logs
-    """
+    """Generate TTS audio with real-time logging and format conversion."""
     if not text.strip():
         return "❌ Error: Text required", None
     
     logs_text = ""
     try:
+        # Use sys.executable to ensure correct Python interpreter
+        cmd = [sys.executable, "tts_demo.py", "--text", text, "--voice", voice]
+        
+        # Use shell=True on Windows
+        shell = platform.system().lower() == "windows"
+        
         process = subprocess.Popen(
-            ["python", "tts_demo.py", "--text", text, "--voice", voice],
+            cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            universal_newlines=True
+            universal_newlines=True,
+            shell=shell
         )
         
         while True:
@@ -112,15 +115,14 @@ def generate_tts_with_logs(voice, text, format):
         os.makedirs(DEFAULT_OUTPUT_DIR, exist_ok=True)
         output_path = Path(DEFAULT_OUTPUT_DIR) / filename
         
-        if format == "wav":
-            shutil.copy2("output.wav", output_path)
+        # Convert audio using pydub
+        if convert_audio("output.wav", str(output_path), format):
+            logs_text += f"✅ Saved: {output_path}\n"
+            os.remove("output.wav")
+            yield logs_text, str(output_path)
         else:
-            data, samplerate = sf.read("output.wav")
-            sf.write(str(output_path), data, samplerate)
-        
-        os.remove("output.wav")
-        logs_text += f"✅ Saved: {output_path}\n"
-        yield logs_text, str(output_path)
+            logs_text += "❌ Audio conversion failed\n"
+            yield logs_text, None
 
     except Exception as e:
         logs_text += f"❌ Error: {str(e)}\n"

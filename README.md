@@ -1,6 +1,6 @@
 # Kokoro TTS Local
 
-A local implementation of the Kokoro Text-to-Speech model, featuring dynamic module loading and automatic dependency management.
+A local implementation of the Kokoro Text-to-Speech model, featuring dynamic module loading, automatic dependency management, and a web interface.
 
 ## Current Status
 
@@ -12,6 +12,7 @@ The project has been updated with:
 - Improved error handling and debugging
 - Interactive CLI interface
 - Cross-platform setup scripts
+- Web interface with Gradio
 
 ## Features
 
@@ -24,12 +25,24 @@ The project has been updated with:
 - Dynamic module loading from Hugging Face
 - Comprehensive error handling and logging
 - Cross-platform support (Windows, Linux, macOS)
+- **NEW: Web Interface Features**
+  - Modern, user-friendly UI
+  - Real-time generation progress
+  - Multiple output formats (WAV, MP3, AAC)
+  - Network sharing capabilities
+  - Audio playback and download
+  - Voice selection dropdown
+  - Detailed process logging
 
 ## Prerequisites
 
 - Python 3.8 or higher
 - Git (for cloning the repository)
 - Internet connection (for initial model download)
+- FFmpeg (required for MP3/AAC conversion):
+  - Windows: Automatically installed with pydub
+  - Linux: `sudo apt-get install ffmpeg`
+  - macOS: `brew install ffmpeg`
 
 ## Dependencies
 
@@ -42,21 +55,37 @@ munch
 soundfile
 huggingface-hub
 espeakng-loader
+gradio>=4.0.0
+pydub  # For audio format conversion
 ```
 
 ## Setup
 
 ### Windows
-Run the PowerShell setup script:
 ```powershell
+# Clone the repository
+git clone https://github.com/PierrunoYT/Kokoro-TTS-Local.git
+cd Kokoro-TTS-Local
+
+# Run the setup script
 .\setup.ps1
 ```
 
 ### Linux/macOS
-Run the bash setup script:
 ```bash
+# Clone the repository
+git clone https://github.com/PierrunoYT/Kokoro-TTS-Local.git
+cd Kokoro-TTS-Local
+
+# Run the setup script
 chmod +x setup.sh
 ./setup.sh
+
+# Install FFmpeg (if needed)
+# Linux:
+sudo apt-get install ffmpeg
+# macOS:
+brew install ffmpeg
 ```
 
 ### Manual Setup
@@ -79,34 +108,37 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
+3. Install system dependencies:
+```bash
+# Windows
+# FFmpeg is automatically installed with pydub
+
+# Linux
+sudo apt-get update
+sudo apt-get install espeak-ng ffmpeg
+
+# macOS
+brew install espeak ffmpeg
+```
+
 ## Usage
 
-### List Available Voices
-To see all available voices from the Hugging Face repository:
+### Web Interface
 ```bash
-python tts_demo.py --list-voices
+# Start the web interface
+python gradio_interface.py
 ```
+This will:
+1. Launch a web interface at http://localhost:7860
+2. Create a public share link (optional)
+3. Allow you to:
+   - Input text to synthesize
+   - Select from available voices
+   - Choose output format (WAV/MP3/AAC)
+   - Monitor generation progress
+   - Play or download generated audio
 
-### Basic Usage
-Run the demo script with default text and voice:
-```bash
-python tts_demo.py
-```
-
-### Custom Text
-Specify your own text:
-```bash
-python tts_demo.py --text "Your custom text here"
-```
-
-### Voice Selection
-Choose a different voice (use --list-voices to see available options):
-```bash
-python tts_demo.py --voice "af" --text "Custom text with specific voice"
-```
-
-### Interactive Mode
-If you run without any arguments, you'll be prompted to enter text interactively:
+### Command Line Interface
 ```bash
 python tts_demo.py
 ```
@@ -133,6 +165,11 @@ The script will:
   - Interactive text input mode
   - Voice selection and listing
   - Error handling and user feedback
+- `gradio_interface.py`: Web interface implementation
+  - Modern, responsive UI
+  - Real-time progress monitoring
+  - Multiple output formats
+  - Network sharing capabilities
 - `setup.ps1`: Windows PowerShell setup script
   - Environment creation
   - Dependency installation
@@ -156,7 +193,7 @@ The project uses the Kokoro-82M model from Hugging Face:
 
 - Sample rate: 22050Hz
 - Input: Text in any language (English recommended)
-- Output: WAV audio file
+- Output: WAV/MP3/AAC audio file
 - Dependencies are automatically managed
 - Modules are dynamically loaded from Hugging Face
 - Error handling includes stack traces for debugging

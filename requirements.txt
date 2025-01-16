@@ -5,4 +5,6 @@ scipy
 munch
 soundfile
 huggingface-hub
-espeakng-loader 
+espeakng-loader
+gradio>=4.0.0
+pydub  # For audio format conversion 
