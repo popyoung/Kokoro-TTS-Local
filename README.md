@@ -213,6 +213,28 @@ The script will:
   - Automatic configuration
 - `requirements.txt`: Project dependencies
 
+## File Structure
+
+```
+.
+├── .cache/                 # Cache directory for downloaded models
+├── .git/                   # Git repository data
+├── .gitignore             # Git ignore rules
+├── .gradio/               # Gradio cache and configuration
+├── __pycache__/           # Python cache files
+├── outputs/               # Generated audio output files
+├── voices/                # Voice model files
+├── venv/                  # Python virtual environment
+├── LICENSE                # Project license file
+├── README.md             # Project documentation
+├── gradio_interface.py    # Web interface implementation
+├── models.py             # Core TTS model implementation
+├── requirements.txt      # Python dependencies
+├── setup.ps1             # Windows setup script
+├── setup.sh              # Linux/macOS setup script
+└── tts_demo.py          # CLI demo implementation
+```
+
 ## Model Information
 
 The project uses the Kokoro-82M model from Hugging Face:
