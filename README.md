@@ -186,46 +186,33 @@ The script will:
 
 ## Project Structure
 
-- `models.py`: Core model loading and speech generation functionality
-  - Model building and initialization with dynamic imports
-  - Voice loading and management from Hugging Face
-  - Speech generation with phoneme output
-  - Voice listing functionality
-  - Automatic espeak-ng configuration
-  - Error handling and logging
-- `tts_demo.py`: Demo script showing basic usage
-  - Command-line interface with argparse
-  - Interactive text input mode
-  - Voice selection and listing
-  - Error handling and user feedback
-- `gradio_interface.py`: Web interface implementation
-  - Modern, responsive UI
-  - Real-time progress monitoring
-  - Multiple output formats
-  - Network sharing capabilities
-- `setup.ps1`: Windows PowerShell setup script
-  - Environment creation
-  - Dependency installation
-  - Automatic configuration
-- `setup.sh`: Linux/macOS bash setup script
-  - Environment creation
-  - Dependency installation
-  - Automatic configuration
-- `requirements.txt`: Project dependencies
-
-## File Structure
-
 ```
 .
 ├── .cache/                 # Cache directory for downloaded models
+│   └── huggingface/       # Hugging Face model cache
 ├── .git/                   # Git repository data
 ├── .gitignore             # Git ignore rules
 ├── .gradio/               # Gradio cache and configuration
+│   ├── certificate.pem    # SSL certificate for Gradio
+│   └── ...               # Other Gradio config files
 ├── __pycache__/           # Python cache files
 ├── outputs/               # Generated audio output files
+│   ├── output.wav        # Default output file
+│   ├── output.mp3        # MP3 converted files
+│   └── output.aac        # AAC converted files
 ├── voices/                # Voice model files
+│   ├── af_bella/         # American Female - Bella voice
+│   ├── af_nicole/        # American Female - Nicole voice
+│   ├── af_sarah/         # American Female - Sarah voice
+│   ├── af_sky/           # American Female - Sky voice
+│   ├── am_adam/          # American Male - Adam voice
+│   ├── am_michael/       # American Male - Michael voice
+│   ├── bf_emma/          # British Female - Emma voice
+│   ├── bf_isabella/      # British Female - Isabella voice
+│   ├── bm_george/        # British Male - George voice
+│   └── bm_lewis/         # British Male - Lewis voice
 ├── venv/                  # Python virtual environment
-├── LICENSE                # Project license file
+├── LICENSE                # Apache 2.0 License file
 ├── README.md             # Project documentation
 ├── gradio_interface.py    # Web interface implementation
 ├── models.py             # Core TTS model implementation
