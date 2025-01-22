@@ -242,8 +242,8 @@ The project uses the Kokoro-82M model from Hugging Face:
 - Model file: `kokoro-v0_19.pth`
 - Voice files: Located in the `voices/` directory
 - Available voices:
-  - African Female: `af_bella`, `af_nicole`, `af_sarah`, `af_sky`
-  - African Male: `am_adam`, `am_michael`
+  - American Female: `af_bella`, `af_nicole`, `af_sarah`, `af_sky`
+  - American Male: `am_adam`, `am_michael`
   - British Female: `bf_emma`, `bf_isabella`
   - British Male: `bm_george`, `bm_lewis`
 - Automatically downloads required files from Hugging Face
