@@ -1,22 +1,32 @@
 # Setup script for Windows
 Write-Host "Setting up Kokoro TTS Local..."
 
-# Check if Python is installed
-if (!(Get-Command python -ErrorAction SilentlyContinue)) {
-    Write-Host "Error: Python is not installed. Please install Python 3.8 or higher."
-    exit 1
+# Check if uv is installed
+$uvExists = Get-Command uv -ErrorAction SilentlyContinue
+if (-not $uvExists) {
+    Write-Host "Installing uv package manager..."
+    iwr -useb https://astral.sh/uv/install.ps1 | iex
 }
 
-# Create and activate virtual environment
-Write-Host "Creating virtual environment..."
-python -m venv venv
-.\venv\Scripts\Activate
+# Create virtual environment if it doesn't exist
+if (-not (Test-Path "venv")) {
+    Write-Host "Creating virtual environment..."
+    uv venv
+}
 
-# Upgrade pip
-python -m pip install --upgrade pip
+# Activate virtual environment
+Write-Host "Activating virtual environment..."
+.\venv\Scripts\Activate.ps1
 
-# Install dependencies
+# Install dependencies using uv
 Write-Host "Installing dependencies..."
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 
-Write-Host "Setup complete! You can now run: python tts_demo.py" 
+# Install FFmpeg if not already installed (using winget)
+$ffmpegExists = Get-Command ffmpeg -ErrorAction SilentlyContinue
+if (-not $ffmpegExists) {
+    Write-Host "Installing FFmpeg..."
+    winget install -e --id Gyan.FFmpeg
+}
+
+Write-Host "Setup complete! Run '.\venv\Scripts\Activate.ps1' to activate the virtual environment." 
