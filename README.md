@@ -13,6 +13,7 @@ The project has been updated with:
 - Interactive CLI interface
 - Cross-platform setup scripts
 - Web interface with Gradio
+- Fast package management with uv
 
 ## Features
 
@@ -40,7 +41,7 @@ The project has been updated with:
 - Git (for cloning the repository)
 - Internet connection (for initial model download)
 - FFmpeg (required for MP3/AAC conversion):
-  - Windows: Automatically installed with pydub
+  - Windows: Automatically installed during setup
   - Linux: `sudo apt-get install ffmpeg`
   - macOS: `brew install ffmpeg`
 
@@ -78,17 +79,16 @@ pydub  # For audio format conversion
 
 ## Setup
 
+We use the modern `uv` package manager for faster and more reliable dependency management.
+
 ### Windows
 ```powershell
 # Clone the repository
 git clone https://github.com/PierrunoYT/Kokoro-TTS-Local.git
 cd Kokoro-TTS-Local
 
-# Run the setup script
+# Run the setup script (will install uv if not present)
 .\setup.ps1
-
-# Download initial model and voices
-python tts_demo.py --list-voices
 ```
 
 ### Linux/macOS
@@ -97,58 +97,16 @@ python tts_demo.py --list-voices
 git clone https://github.com/PierrunoYT/Kokoro-TTS-Local.git
 cd Kokoro-TTS-Local
 
-# Run the setup script
+# Run the setup script (will install uv if not present)
 chmod +x setup.sh
 ./setup.sh
-
-# Install FFmpeg (if needed)
-# Linux:
-sudo apt-get install ffmpeg
-# macOS:
-brew install ffmpeg
-
-# Download initial model and voices
-python tts_demo.py --list-voices
 ```
 
-### Manual Setup
-If you prefer to set up manually:
-
-1. Create a virtual environment:
-```bash
-# Windows
-python -m venv venv
-.\venv\Scripts\activate
-
-# Linux/macOS
-python3 -m venv venv
-source venv/bin/activate
-```
-
-2. Install dependencies:
-```bash
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-```
-
-3. Install system dependencies:
-```bash
-# Windows
-# FFmpeg is automatically installed with pydub
-
-# Linux
-sudo apt-get update
-sudo apt-get install espeak-ng ffmpeg
-
-# macOS
-brew install espeak ffmpeg
-```
-
-4. Download initial model and voices:
-```bash
-# This will download the model and voices from Hugging Face
-python tts_demo.py --list-voices
-```
+The setup scripts will:
+1. Install the `uv` package manager if not present
+2. Create a virtual environment
+3. Install all dependencies using `uv`
+4. Install system requirements (espeak-ng, FFmpeg)
 
 ## Usage
 
@@ -200,17 +158,8 @@ The script will:
 │   ├── output.wav        # Default output file
 │   ├── output.mp3        # MP3 converted files
 │   └── output.aac        # AAC converted files
-├── voices/                # Voice model files
-│   ├── af_bella/         # American Female - Bella voice
-│   ├── af_nicole/        # American Female - Nicole voice
-│   ├── af_sarah/         # American Female - Sarah voice
-│   ├── af_sky/           # American Female - Sky voice
-│   ├── am_adam/          # American Male - Adam voice
-│   ├── am_michael/       # American Male - Michael voice
-│   ├── bf_emma/          # British Female - Emma voice
-│   ├── bf_isabella/      # British Female - Isabella voice
-│   ├── bm_george/        # British Male - George voice
-│   └── bm_lewis/         # British Male - Lewis voice
+├── voices/                # Voice model files (downloaded on demand)
+│   └── ...               # Voice files are downloaded when needed
 ├── venv/                  # Python virtual environment
 ├── LICENSE                # Apache 2.0 License file
 ├── README.md             # Project documentation
@@ -227,7 +176,7 @@ The script will:
 The project uses the Kokoro-82M model from Hugging Face:
 - Repository: [hexgrad/Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M)
 - Model file: `kokoro-v0_19.pth`
-- Voice files: Located in the `voices/` directory
+- Voice files: Located in the `voices/` directory (downloaded automatically when needed)
 - Available voices:
   - American Female: `af_bella`, `af_nicole`, `af_sarah`, `af_sky`
   - American Male: `am_adam`, `am_michael`
