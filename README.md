@@ -2,14 +2,13 @@
 
 A local implementation of the Kokoro Text-to-Speech model, featuring dynamic module loading, automatic dependency management, and a web interface.
 
-> ⚠️ **NOTICE: Currently Experiencing Issues**
+> ⚠️ **WARNING: Currently Not Working**
 > 
-> The project is currently experiencing encoding issues with special characters in the model configuration. We are working on a fix. Key issues:
-> - Unicode decoding errors with model configuration
-> - Special character handling in phoneme generation
-> - Potential voice loading problems
+> The application currently fails due to issues with espeak-ng integration.
+> This is a known issue and will be fixed in a future update.
 >
-> A fix is being implemented. Please check back later or watch the repository for updates.
+> Manual installation of espeak-ng does not resolve the issue.
+> Please check back later for updates.
 
 ## Installation
 
