@@ -5,17 +5,17 @@ A Gradio interface for the Kokoro-TTS-Local text-to-speech system.
 Supports multiple voices and audio formats, with cross-platform compatibility.
 
 Key Features:
-- Multiple voice models support
+- Multiple voice models support (26+ voices)
 - Real-time generation with progress logging
 - WAV, MP3, and AAC output formats
 - Network sharing capabilities
 - Cross-platform compatibility (Windows, macOS, Linux)
 
 Dependencies:
+- kokoro: Official Kokoro TTS library
 - gradio: Web interface framework
 - soundfile: Audio file handling
 - pydub: Audio format conversion
-- models: Custom module for voice model management
 """
 
 import gradio as gr
@@ -36,7 +36,7 @@ from models import (
 # Global configuration
 CONFIG_FILE = "tts_config.json"  # Stores user preferences and paths
 DEFAULT_OUTPUT_DIR = "outputs"    # Directory for generated audio files
-SAMPLE_RATE = 22050
+SAMPLE_RATE = 24000  # Updated from 22050 to match new model
 
 # Initialize model globally
 device = 'cuda' if torch.cuda.is_available() else 'cpu'

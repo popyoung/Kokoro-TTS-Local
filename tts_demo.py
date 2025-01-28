@@ -7,17 +7,17 @@ import soundfile as sf
 from pathlib import Path
 
 # Constants
-SAMPLE_RATE = 22050
-DEFAULT_MODEL_PATH = 'kokoro-v0_19.pth'
+SAMPLE_RATE = 24000
+DEFAULT_MODEL_PATH = 'kokoro-v1_0.pth'
 DEFAULT_OUTPUT_FILE = 'output.wav'
-DEFAULT_LANGUAGE = 'a'  # TODO: Document why this is 'a' or make configurable
+DEFAULT_LANGUAGE = 'a'  # Now documented: 'a' for American English, 'b' for British English
 DEFAULT_TEXT = "Hello, welcome to this text-to-speech test."
 
 # Configure tqdm for better Windows console support
 tqdm.monitor_interval = 0  # Disable monitor thread to prevent encoding issues
 
 def load_and_validate_voice(voice_name: str, device: str) -> torch.Tensor:
-    """Load and validate the requested voice.
+    """Load the requested voice.
     
     Args:
         voice_name: Name of the voice to load
@@ -25,13 +25,7 @@ def load_and_validate_voice(voice_name: str, device: str) -> torch.Tensor:
         
     Returns:
         Loaded voice tensor
-        
-    Raises:
-        ValueError: If the requested voice doesn't exist
     """
-    available_voices = list_available_voices()
-    if voice_name not in available_voices:
-        raise ValueError(f"Voice '{voice_name}' not found. Available voices: {', '.join(available_voices)}")
     return load_voice(voice_name, device)
 
 def main() -> None:

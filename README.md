@@ -4,26 +4,24 @@ A local implementation of the Kokoro Text-to-Speech model, featuring dynamic mod
 
 ## Current Status
 
-✅ **WORKING - READY TO USE** ✅
+✅ **WORKING - v1.0 READY** ✅
 
 The project has been updated with:
-- Automatic espeak-ng installation and configuration
-- Dynamic module loading from Hugging Face
-- Improved error handling and debugging
-- Interactive CLI interface
-- Cross-platform setup scripts
-- Web interface with Gradio
-- Fast package management with uv
+- Support for Kokoro v1.0 model
+- Official kokoro and misaki libraries
+- 24kHz sample rate support
+- 26+ voice models
+- American and British English support
+- All previous features
 
 ## Features
 
 - Local text-to-speech synthesis using the Kokoro model
-- Automatic espeak-ng setup using espeakng-loader
+- Automatic espeak-ng setup using kokoro
 - Multiple voice support with easy voice selection
 - Phoneme output support and visualization
 - Interactive CLI for custom text input
 - Voice listing functionality
-- Dynamic module loading from Hugging Face
 - Comprehensive error handling and logging
 - Cross-platform support (Windows, Linux, macOS)
 - **NEW: Web Interface Features**
@@ -65,14 +63,11 @@ If you skip this, the system will still work but may use more disk space.
 ## Dependencies
 
 ```txt
+kokoro  # New official inference library
+misaki  # New G2P library for Kokoro
 torch
-phonemizer-fork
-transformers
-scipy
-munch
 soundfile
 huggingface-hub
-espeakng-loader
 gradio>=4.0.0
 pydub  # For audio format conversion
 ```
@@ -106,7 +101,7 @@ The setup scripts will:
 1. Install the `uv` package manager if not present
 2. Create a virtual environment
 3. Install all dependencies using `uv`
-4. Install system requirements (espeak-ng, FFmpeg)
+4. Install FFmpeg for audio conversion
 
 ## Usage
 
@@ -136,11 +131,9 @@ python tts_demo.py
 
 The script will:
 1. Download necessary model files from Hugging Face
-2. Set up espeak-ng automatically using espeakng-loader
-3. Import required modules dynamically
-4. Test the phonemizer functionality
-5. Generate speech from your text with phoneme visualization
-6. Save the output as 'output.wav' (22050Hz sample rate)
+2. Set up espeak-ng automatically via kokoro
+3. Generate speech from your text with phoneme visualization
+4. Save the output as 'output.wav' (24kHz sample rate)
 
 ## Project Structure
 
@@ -173,24 +166,21 @@ The script will:
 
 ## Model Information
 
-The project uses the Kokoro-82M model from Hugging Face:
+The project uses the latest Kokoro model from Hugging Face:
 - Repository: [hexgrad/Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M)
-- Model file: `kokoro-v0_19.pth`
-- Voice files: Located in the `voices/` directory (downloaded automatically when needed)
-- Available voices:
-  - American Female: `af_bella`, `af_nicole`, `af_sarah`, `af_sky`
-  - American Male: `am_adam`, `am_michael`
-  - British Female: `bf_emma`, `bf_isabella`
-  - British Male: `bm_george`, `bm_lewis`
-- Automatically downloads required files from Hugging Face
+- Model file: `kokoro-v1_0.pth`
+- Sample rate: 24kHz (upgraded from 22.05kHz)
+- Voice files: Located in the `voices/` directory (downloaded automatically)
+- Available voices: 26+ voices (see [VOICES.md](https://huggingface.co/hexgrad/Kokoro-82M/blob/main/VOICES.md))
+- Languages: American English ('a'), British English ('b')
 
 ## Technical Details
 
-- Sample rate: 22050Hz
+- Sample rate: 24kHz (upgraded from 22.05kHz)
 - Input: Text in any language (English recommended)
 - Output: WAV/MP3/AAC audio file
-- Dependencies are automatically managed
-- Modules are dynamically loaded from Hugging Face
+- Dependencies managed by kokoro library
+- Automatic espeak-ng installation via kokoro
 - Error handling includes stack traces for debugging
 - Cross-platform compatibility through setup scripts
 

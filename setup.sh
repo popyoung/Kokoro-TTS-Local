@@ -27,14 +27,14 @@ source venv/bin/activate
 echo "Installing dependencies..."
 uv pip install -r requirements.txt
 
-# Install system dependencies if needed
+# Install FFmpeg if needed
 if [ "$(uname)" == "Linux" ]; then
-    echo "Installing system dependencies..."
+    echo "Installing FFmpeg..."
     sudo apt-get update
-    sudo apt-get install -y espeak-ng ffmpeg
+    sudo apt-get install -y ffmpeg
 elif [ "$(uname)" == "Darwin" ]; then
-    echo "Installing system dependencies..."
-    brew install espeak-ng ffmpeg
+    echo "Installing FFmpeg..."
+    brew install ffmpeg
 fi
 
 echo "Setup complete! Run 'source venv/bin/activate' to activate the virtual environment." 
