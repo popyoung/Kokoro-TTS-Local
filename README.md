@@ -133,35 +133,34 @@ The setup scripts will:
 
 ## Usage
 
-### Web Interface
+After setup, simply run:
 ```bash
-# Start the web interface
-python gradio_interface.py
+python run.py
 ```
 
-After running the command:
-1. Open your web browser and visit: http://localhost:7860
-2. The interface will also create a public share link (optional)
-3. You can now:
-   - Input text to synthesize
-   - Select from available voices
-   - Choose output format (WAV/MP3/AAC)
-   - Monitor generation progress
-   - Play or download generated audio
+This will show an interactive menu where you can choose:
+1. TTS Demo - Command line interface for direct text-to-speech conversion
+2. Web Interface - Browser-based interface with additional features
 
-Note: If port 7860 is already in use, Gradio will automatically try the next available port (7861, 7862, etc.).
+Both interfaces are interactive and will guide you through the process.
+
+### TTS Demo Features
+- Voice selection
+- Text input
+- Phoneme visualization
+- WAV file output
+
+### Web Interface Features
+- Modern, user-friendly UI
+- Real-time generation progress
+- Multiple output formats (WAV/MP3/AAC)
+- Network sharing capabilities
+- Audio playback and download
+- Voice selection dropdown
+- Detailed process logging
+
+Note: If port 7860 is already in use for the web interface, Gradio will automatically try the next available port (7861, 7862, etc.).
 Check the terminal output for the correct URL.
-
-### Command Line Interface
-```bash
-python tts_demo.py
-```
-
-The script will:
-1. Download necessary model files from Hugging Face
-2. Set up espeak-ng automatically via kokoro
-3. Generate speech from your text with phoneme visualization
-4. Save the output as 'output.wav' (24kHz sample rate)
 
 ## Project Structure
 

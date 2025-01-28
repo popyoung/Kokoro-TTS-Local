@@ -4,6 +4,8 @@ import torch
 from kokoro import KPipeline
 import os
 import locale
+import json
+from pathlib import Path
 
 # Set environment variables for proper encoding
 os.environ["PYTHONIOENCODING"] = "utf-8"
@@ -22,11 +24,23 @@ except locale.Error:
 # Initialize pipeline globally
 _pipeline = None
 
+def read_json_utf8(file_path: str) -> dict:
+    """Read JSON file with UTF-8 encoding"""
+    with open(file_path, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
 def build_model(model_path: str, device: str) -> KPipeline:
     """Build and return the Kokoro pipeline"""
     global _pipeline
     if _pipeline is None:
-        _pipeline = KPipeline(device=device)
+        try:
+            # Monkey patch KPipeline's json loading
+            import kokoro.pipeline
+            kokoro.pipeline.json.load = lambda f: json.loads(f.read().encode('cp1252').decode('utf-8'))
+            _pipeline = KPipeline(device=device)
+        except Exception as e:
+            print(f"Error initializing pipeline: {e}")
+            raise
     return _pipeline
 
 def list_available_voices() -> List[str]:
