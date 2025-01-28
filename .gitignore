@@ -37,3 +37,4 @@ output*.wav
 voices/
 voices/*.pt
 voices/**/*.pt
+config.json
