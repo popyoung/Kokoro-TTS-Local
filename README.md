@@ -2,6 +2,15 @@
 
 A local implementation of the Kokoro Text-to-Speech model, featuring dynamic module loading, automatic dependency management, and a web interface.
 
+> ⚠️ **NOTICE: Currently Experiencing Issues**
+> 
+> The project is currently experiencing encoding issues with special characters in the model configuration. We are working on a fix. Key issues:
+> - Unicode decoding errors with model configuration
+> - Special character handling in phoneme generation
+> - Potential voice loading problems
+>
+> A fix is being implemented. Please check back later or watch the repository for updates.
+
 ## Installation
 
 1. Create a Python virtual environment:
