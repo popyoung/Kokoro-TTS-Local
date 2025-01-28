@@ -5,6 +5,7 @@ import argparse
 from tqdm.auto import tqdm
 import soundfile as sf
 from pathlib import Path
+import numpy as np
 
 # Constants
 SAMPLE_RATE = 24000
@@ -57,15 +58,6 @@ def main() -> None:
         with tqdm(total=1, desc="Building model") as pbar:
             model = build_model(args.model, device)
             pbar.update(1)
-            
-        print("\nLoading voice...")
-        with tqdm(total=1, desc="Loading voice") as pbar:
-            try:
-                voice = load_and_validate_voice(args.voice, device)
-                pbar.update(1)
-            except ValueError as e:
-                print(f"Error: {e}")
-                return
         
         # Get text input
         if args.text:
@@ -80,11 +72,14 @@ def main() -> None:
         
         # Use the generator API
         all_audio = []
-        generator = model(text, voice=voice, speed=args.speed, split_pattern=r'\n+')
+        generator = model(text, voice=args.voice, speed=args.speed, split_pattern=r'\n+')
         
         with tqdm(desc="Generating speech") as pbar:
             for gs, ps, audio in generator:
                 if audio is not None:
+                    # Convert numpy array to tensor if needed
+                    if isinstance(audio, np.ndarray):
+                        audio = torch.from_numpy(audio).float()
                     all_audio.append(audio)
                     try:
                         print(f"\nGenerated segment: {gs}")
@@ -115,8 +110,6 @@ def main() -> None:
         # Cleanup
         if 'model' in locals():
             del model
-        if 'voice' in locals():
-            del voice
         torch.cuda.empty_cache()
 
 if __name__ == "__main__":

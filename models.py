@@ -6,6 +6,7 @@ import os
 import json
 import codecs
 from pathlib import Path
+import numpy as np
 
 # Set environment variables for proper encoding
 os.environ["PYTHONIOENCODING"] = "utf-8"
@@ -95,8 +96,47 @@ def build_model(model_path: str, device: str) -> KPipeline:
         try:
             # Patch json loading before initializing pipeline
             patch_json_load()
+            
+            # Download model if it doesn't exist
+            if model_path is None:
+                model_path = 'kokoro-v1_0.pth'
+            
+            if not os.path.exists(model_path):
+                print(f"Downloading model file {model_path}...")
+                from huggingface_hub import hf_hub_download
+                model_path = hf_hub_download(
+                    repo_id="hexgrad/Kokoro-82M",
+                    filename="kokoro-v1_0.pth",
+                    local_dir="."
+                )
+                print(f"Model downloaded to {model_path}")
+            
+            # Download config if it doesn't exist
+            config_path = "config.json"
+            if not os.path.exists(config_path):
+                print("Downloading config file...")
+                config_path = hf_hub_download(
+                    repo_id="hexgrad/Kokoro-82M",
+                    filename="config.json",
+                    local_dir="."
+                )
+                print(f"Config downloaded to {config_path}")
+            
+            # Download voice files if they don't exist
+            voices_dir = "voices"
+            if not os.path.exists(voices_dir):
+                print("Downloading voice files...")
+                os.makedirs(voices_dir, exist_ok=True)
+                from huggingface_hub import snapshot_download
+                snapshot_download(
+                    repo_id="hexgrad/Kokoro-82M",
+                    local_dir=".",
+                    allow_patterns="voices/*"
+                )
+                print("Voice files downloaded")
+            
             # Initialize pipeline with American English by default
-            _pipeline = KPipeline(device=device, lang_code='a')
+            _pipeline = KPipeline(device=device, lang_code='a', config_path=config_path, model_path=model_path)
         except Exception as e:
             print(f"Error initializing pipeline: {e}")
             raise
@@ -104,19 +144,26 @@ def build_model(model_path: str, device: str) -> KPipeline:
 
 def list_available_voices() -> List[str]:
     """List all available voice models"""
-    pipeline = build_model(None, 'cpu')
-    return pipeline.list_voices()
+    voices_dir = Path("voices")
+    if not voices_dir.exists():
+        return []
+    return [f.stem for f in voices_dir.glob("*.pt")]
 
 def load_voice(voice_name: str, device: str) -> torch.Tensor:
     """Load a voice model"""
     pipeline = build_model(None, device)
-    return pipeline.load_voice(voice_name)
+    # Format voice path correctly - strip .pt if it was included
+    voice_name = voice_name.replace('.pt', '')
+    voice_path = f"voices/{voice_name}.pt"
+    if not os.path.exists(voice_path):
+        raise ValueError(f"Voice file not found: {voice_path}")
+    return pipeline.load_voice(voice_path)
 
 def generate_speech(
     model: KPipeline,
     text: str,
-    voice: torch.Tensor,
-    lang: str = 'a',  # 'a' for American English, 'b' for British English
+    voice: str,
+    lang: str = 'a',
     device: str = 'cpu',
     speed: float = 1.0
 ) -> Tuple[Optional[torch.Tensor], Optional[str]]:
@@ -125,7 +172,7 @@ def generate_speech(
     Args:
         model: KPipeline instance
         text: Text to synthesize
-        voice: Voice tensor from load_voice()
+        voice: Voice name (e.g. 'af_bella')
         lang: Language code ('a' for American English, 'b' for British English)
         device: Device to use ('cuda' or 'cpu')
         speed: Speech speed multiplier (default: 1.0)
@@ -134,16 +181,24 @@ def generate_speech(
         Tuple of (audio tensor, phonemes string) or (None, None) on error
     """
     try:
+        # Format voice path
+        voice_path = f"voices/{voice}.pt"
+        if not os.path.exists(voice_path):
+            raise ValueError(f"Voice file not found: {voice_path}")
+            
         # Generate speech with the new API
         generator = model(
             text, 
-            voice=voice, 
+            voice=voice_path,
             speed=speed,
-            split_pattern=r'\n+'  # Split on newlines for better handling
+            split_pattern=r'\n+'
         )
         
-        # Get first generated segment
+        # Get first generated segment and convert numpy array to tensor if needed
         for gs, ps, audio in generator:
+            if audio is not None:
+                if isinstance(audio, np.ndarray):
+                    audio = torch.from_numpy(audio).float()
             return audio, ps
             
         return None, None
