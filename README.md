@@ -2,13 +2,21 @@
 
 A local implementation of the Kokoro Text-to-Speech model, featuring dynamic module loading, automatic dependency management, and a web interface.
 
-> ⚠️ **WARNING: Currently Not Working**
-> 
-> The application currently fails due to issues with espeak-ng integration.
-> This is a known issue and will be fixed in a future update.
->
-> Manual installation of espeak-ng does not resolve the issue.
-> Please check back later for updates.
+## Features
+
+- Local text-to-speech synthesis using the Kokoro-82M model
+- Multiple voice support with easy voice selection
+- Automatic model and voice downloading
+- Phoneme output support and visualization
+- Interactive CLI for custom text input
+- Voice listing functionality
+- Cross-platform support (Windows, Linux, macOS)
+- Web interface with real-time generation progress
+
+## Prerequisites
+
+- Python 3.8 or higher
+- FFmpeg (optional, for MP3/AAC conversion)
 
 ## Installation
 
@@ -28,56 +36,68 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-3. Run the program:
-```bash
-python run.py
-```
-
-## Features
-
-- Local text-to-speech synthesis using the Kokoro model
-- Multiple voice support with easy voice selection
-- Phoneme output support and visualization
-- Interactive CLI for custom text input
-- Voice listing functionality
-- Cross-platform support (Windows, Linux, macOS)
-- Web interface with real-time generation progress
-
-## Prerequisites
-
-- Python 3.8 or higher
-- FFmpeg (optional, for MP3/AAC conversion)
-
 ## Usage
 
-After installation, run:
+You can use either the command-line interface or the web interface:
+
+### Command Line Interface
+
+1. List available voices:
 ```bash
-python run.py
+python tts_demo.py --list-voices
 ```
 
-This will show an interactive menu where you can choose:
-1. TTS Demo - Command line interface for direct text-to-speech conversion
-2. Web Interface - Browser-based interface with additional features
+2. Generate speech with default settings:
+```bash
+python tts_demo.py
+```
 
-Both interfaces are interactive and will guide you through the process.
+3. Generate speech with specific voice and text:
+```bash
+python tts_demo.py --voice af_bella --text "Hello, world!"
+```
 
-### TTS Demo Features
-- Voice selection
-- Text input
-- Phoneme visualization
-- WAV file output
+4. Change speech speed:
+```bash
+python tts_demo.py --voice af_bella --speed 1.2
+```
 
-### Web Interface Features
-- Modern, user-friendly UI
+### Web Interface
+
+For a more user-friendly experience, you can use the web interface:
+
+```bash
+python gradio_interface.py
+```
+
+Then open your browser to the URL shown in the console (typically http://localhost:7860).
+
+The web interface provides:
+- Easy voice selection from a dropdown menu
+- Text input field with examples
 - Real-time generation progress
-- Multiple output formats (WAV/MP3/AAC)
-- Network sharing capabilities
-- Audio playback and download
-- Voice selection dropdown
-- Detailed process logging
+- Audio playback in the browser
+- Download options for generated audio
 
-Note: If port 7860 is already in use for the web interface, Gradio will automatically try the next available port (7861, 7862, etc.).
-Check the terminal output for the correct URL.
+## Available Voices
+
+The system includes various voices with different characteristics:
+- American Female voices (af_*): bella, jessica, nicole, etc.
+- American Male voices (am_*): adam, eric, michael, etc.
+- British Female voices (bf_*): alice, emma, etc.
+- British Male voices (bm_*): daniel, george, etc.
+
+## Troubleshooting
+
+The application should work out of the box. If you encounter any issues:
+
+1. Make sure you're using a Python virtual environment
+2. Verify all dependencies are installed correctly
+3. Check if your system meets the prerequisites
+4. If the issue persists, please open an issue on GitHub with:
+   - Your system information
+   - Complete error message
+   - Steps to reproduce the problem
 
 ## Project Structure
 
@@ -87,25 +107,16 @@ Check the terminal output for the correct URL.
 │   └── huggingface/       # Hugging Face model cache
 ├── .git/                   # Git repository data
 ├── .gitignore             # Git ignore rules
-├── .gradio/               # Gradio cache and configuration
-│   ├── certificate.pem    # SSL certificate for Gradio
-│   └── ...               # Other Gradio config files
 ├── __pycache__/           # Python cache files
-├── outputs/               # Generated audio output files
-│   ├── output.wav        # Default output file
-│   ├── output.mp3        # MP3 converted files
-│   └── output.aac        # AAC converted files
 ├── voices/                # Voice model files (downloaded on demand)
 │   └── ...               # Voice files are downloaded when needed
 ├── venv/                  # Python virtual environment
 ├── LICENSE                # Apache 2.0 License file
 ├── README.md             # Project documentation
-├── gradio_interface.py    # Web interface implementation
 ├── models.py             # Core TTS model implementation
+├── gradio_interface.py   # Web interface implementation
 ├── requirements.txt      # Python dependencies
-├── setup.ps1             # Windows setup script
-├── setup.sh              # Linux/macOS setup script
-└── tts_demo.py          # CLI demo implementation
+└── tts_demo.py          # CLI implementation
 ```
 
 ## Model Information
@@ -113,20 +124,10 @@ Check the terminal output for the correct URL.
 The project uses the latest Kokoro model from Hugging Face:
 - Repository: [hexgrad/Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M)
 - Model file: `kokoro-v1_0.pth`
-- Sample rate: 24kHz (upgraded from 22.05kHz)
+- Sample rate: 24kHz
 - Voice files: Located in the `voices/` directory (downloaded automatically)
 - Available voices: 26+ voices (see [VOICES.md](https://huggingface.co/hexgrad/Kokoro-82M/blob/main/VOICES.md))
 - Languages: American English ('a'), British English ('b')
-
-## Technical Details
-
-- Sample rate: 24kHz (upgraded from 22.05kHz)
-- Input: Text in any language (English recommended)
-- Output: WAV/MP3/AAC audio file
-- Dependencies managed by kokoro library
-- Automatic espeak-ng installation via kokoro
-- Error handling includes stack traces for debugging
-- Cross-platform compatibility through setup scripts
 
 ## Contributing
 
@@ -140,4 +141,4 @@ Feel free to contribute by:
 
 ## License
 
-This project is licensed under the Apache 2.0 License. 
+Apache 2.0 - See LICENSE file for details 
