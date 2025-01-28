@@ -82,8 +82,16 @@ We use the modern `uv` package manager for faster and more reliable dependency m
 git clone https://github.com/PierrunoYT/Kokoro-TTS-Local.git
 cd Kokoro-TTS-Local
 
-# Run the setup script (will install uv if not present)
+# Run the setup script
 .\setup.ps1
+
+# If you get a security error, try:
+powershell -ExecutionPolicy Bypass -File setup.ps1
+
+# Install FFmpeg manually if needed:
+# 1. Download from: https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip
+# 2. Extract to a folder
+# 3. Add the bin folder to your system PATH
 ```
 
 ### Linux/macOS

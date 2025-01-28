@@ -1,32 +1,41 @@
-# Setup script for Windows
-Write-Host "Setting up Kokoro TTS Local..."
+#Requires -Version 5.0
+<#
+.SYNOPSIS
+    Setup script for Kokoro TTS Local
+.DESCRIPTION
+    Installs required dependencies and sets up the environment for Kokoro TTS Local
+.NOTES
+    Author: PierrunoYT
+    License: Apache 2.0
+#>
 
-# Check if uv is installed
-$uvExists = Get-Command uv -ErrorAction SilentlyContinue
-if (-not $uvExists) {
-    Write-Host "Installing uv package manager..."
-    iwr -useb https://astral.sh/uv/install.ps1 | iex
-}
+[CmdletBinding()]
+param()
+
+Write-Host "Setting up Kokoro TTS Local..."
 
 # Create virtual environment if it doesn't exist
 if (-not (Test-Path "venv")) {
     Write-Host "Creating virtual environment..."
-    uv venv
+    python -m venv venv
 }
 
 # Activate virtual environment
 Write-Host "Activating virtual environment..."
 .\venv\Scripts\Activate.ps1
 
-# Install dependencies using uv
+# Install pip and dependencies
 Write-Host "Installing dependencies..."
-uv pip install -r requirements.txt
+python -m pip install --upgrade pip
+pip install -r requirements.txt
 
-# Install FFmpeg if not already installed (using winget)
-$ffmpegExists = Get-Command ffmpeg -ErrorAction SilentlyContinue
-if (-not $ffmpegExists) {
-    Write-Host "Installing FFmpeg..."
-    winget install -e --id Gyan.FFmpeg
+# Check for FFmpeg
+$ffmpeg = Get-Command ffmpeg -ErrorAction SilentlyContinue
+if (-not $ffmpeg) {
+    Write-Host "FFmpeg not found. Please install FFmpeg manually:"
+    Write-Host "1. Download from: https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
+    Write-Host "2. Extract to a folder"
+    Write-Host "3. Add the bin folder to your system PATH"
 }
 
-Write-Host "Setup complete! Run '.\venv\Scripts\Activate.ps1' to activate the virtual environment." 
+Write-Host "`nSetup complete! Run '.\venv\Scripts\Activate.ps1' to activate the virtual environment." 
