@@ -79,7 +79,7 @@ def generate_tts_with_logs(voice_name, text, format):
         # Initialize model if not done yet
         if model is None:
             logs_text += "Loading model...\n"
-            model = build_model("kokoro-v0_19.pth", device)
+            model = build_model("kokoro-v1_0.pth", device)  # Updated to v1.0
         
         # Load voice
         logs_text += f"Loading voice: {voice_name}\n"
@@ -89,7 +89,24 @@ def generate_tts_with_logs(voice_name, text, format):
         # Generate speech
         logs_text += f"Generating speech for: '{text}'\n"
         yield logs_text, None
-        audio, phonemes = generate_speech(model, text, voice, lang='a', device=device)
+        
+        # Use the generator API
+        generator = model(text, voice=voice, speed=1.0, split_pattern=r'\n+')
+        audio = None
+        phonemes = None
+        
+        # Process all segments
+        all_audio = []
+        for gs, ps, segment_audio in generator:
+            if segment_audio is not None:
+                all_audio.append(segment_audio)
+                phonemes = ps  # Keep the last phonemes
+                logs_text += f"✓ Generated segment: {gs}\n"
+                yield logs_text, None
+        
+        # Combine all audio segments
+        if all_audio:
+            audio = torch.cat(all_audio, dim=0)
         
         if audio is not None and phonemes:
             try:

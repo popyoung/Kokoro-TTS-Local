@@ -1,11 +1,11 @@
 kokoro  # Official Kokoro TTS library
 misaki  # G2P library for Kokoro
-torch
-soundfile
-huggingface-hub
-gradio>=4.0.0
+torch  # PyTorch for model inference
+soundfile  # Audio file handling
+huggingface-hub  # Model downloads
+gradio  # Web interface
 pydub  # For audio format conversion
-espeakng-loader>=0.1.6  # For loading espeak-ng library
-phonemizer-fork>=3.0.2  # For phoneme generation
+espeakng-loader  # For loading espeak-ng library
+phonemizer-fork  # For phoneme generation
 wheel  # For building packages
 setuptools  # For installing packages 

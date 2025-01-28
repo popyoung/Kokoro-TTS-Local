@@ -2,138 +2,47 @@
 
 A local implementation of the Kokoro Text-to-Speech model, featuring dynamic module loading, automatic dependency management, and a web interface.
 
-## Current Status
+## Installation
 
-✅ **WORKING - v1.0 READY** ✅
+1. Create a Python virtual environment:
+```bash
+# Windows
+python -m venv venv
+.\venv\Scripts\activate
 
-The project has been updated with:
-- Support for Kokoro v1.0 model
-- Official kokoro and misaki libraries
-- 24kHz sample rate support
-- 26+ voice models
-- American and British English support
-- All previous features
+# Linux/macOS
+python3 -m venv venv
+source venv/bin/activate
+```
+
+2. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+3. Run the program:
+```bash
+python run.py
+```
 
 ## Features
 
 - Local text-to-speech synthesis using the Kokoro model
-- Automatic espeak-ng setup using kokoro
 - Multiple voice support with easy voice selection
 - Phoneme output support and visualization
 - Interactive CLI for custom text input
 - Voice listing functionality
-- Comprehensive error handling and logging
 - Cross-platform support (Windows, Linux, macOS)
-- **NEW: Web Interface Features**
-  - Modern, user-friendly UI
-  - Real-time generation progress
-  - Multiple output formats (WAV, MP3, AAC)
-  - Network sharing capabilities
-  - Audio playback and download
-  - Voice selection dropdown
-  - Detailed process logging
+- Web interface with real-time generation progress
 
 ## Prerequisites
 
 - Python 3.8 or higher
-- Git (for cloning the repository)
-- Internet connection (for initial model download)
-- FFmpeg (required for MP3/AAC conversion):
-  - Windows: Manual installation (see setup instructions)
-  - Linux: `sudo apt-get install ffmpeg`
-  - macOS: `brew install ffmpeg`
-
-### Windows-Specific Requirements
-For optimal performance on Windows, you should either:
-1. Enable Developer Mode:
-   - Open Windows Settings
-   - Navigate to System > Developer settings
-   - Turn on Developer Mode
-   
-OR
-
-2. Run Python as Administrator:
-   - Right-click your terminal (PowerShell/Command Prompt)
-   - Select "Run as administrator"
-   - Run the commands from there
-
-Additionally:
-- Use PowerShell or Command Prompt with UTF-8 encoding:
-  ```powershell
-  # Set console to UTF-8 mode
-  chcp 65001
-  ```
-- Or set system-wide UTF-8 encoding:
-  1. Open Windows Settings
-  2. Go to Time & Language > Language & Region
-  3. Click "Administrative language settings"
-  4. Click "Change system locale"
-  5. Check "Beta: Use Unicode UTF-8 for worldwide language support"
-  6. Restart your computer
-
-This ensures proper handling of international characters and model files.
-
-## Dependencies
-
-Core Python packages:
-```txt
-kokoro  # Official Kokoro TTS library
-misaki  # G2P library for Kokoro
-torch   # PyTorch for model inference
-soundfile  # Audio file handling
-huggingface-hub  # Model downloads
-gradio>=4.0.0  # Web interface
-pydub  # Audio format conversion
-```
-
-System dependencies:
-- FFmpeg: Required for MP3/AAC conversion
-- Python 3.8+: Required for running the application
-
-## Setup
-
-We use Python's built-in virtual environment for dependency management.
-
-### Windows
-```powershell
-# Clone the repository
-git clone https://github.com/PierrunoYT/Kokoro-TTS-Local.git
-cd Kokoro-TTS-Local
-
-# Run the setup script
-.\setup.ps1
-
-# If you get a security error, try:
-powershell -ExecutionPolicy Bypass -File setup.ps1
-
-# Install FFmpeg manually:
-# 1. Download from: https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip
-# 2. Extract to a folder
-# 3. Add the bin folder to your system PATH
-
-# When returning to the project later, always activate with:
-.\venv\Scripts\ActivateUTF8.ps1
-```
-
-### Linux/macOS
-```bash
-# Clone the repository
-git clone https://github.com/PierrunoYT/Kokoro-TTS-Local.git
-cd Kokoro-TTS-Local
-
-# Run the setup script
-chmod +x setup.sh
-./setup.sh
-```
-
-The setup scripts will:
-1. Create a Python virtual environment
-2. Install all required dependencies
-3. Guide you through FFmpeg installation if needed
+- FFmpeg (optional, for MP3/AAC conversion)
 
 ## Usage
 
-After setup, simply run:
+After installation, run:
 ```bash
 python run.py
 ```

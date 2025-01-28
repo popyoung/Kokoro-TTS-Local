@@ -38,6 +38,7 @@ def main() -> None:
         parser.add_argument('--model', type=str, default=DEFAULT_MODEL_PATH, help=f'Path to model file (default: {DEFAULT_MODEL_PATH})')
         parser.add_argument('--output', type=str, default=DEFAULT_OUTPUT_FILE, help=f'Output WAV file (default: {DEFAULT_OUTPUT_FILE})')
         parser.add_argument('--lang', type=str, default=DEFAULT_LANGUAGE, help=f'Language code (default: {DEFAULT_LANGUAGE})')
+        parser.add_argument('--speed', type=float, default=1.0, help='Speech speed multiplier (default: 1.0)')
         args = parser.parse_args()
 
         if args.list_voices:
@@ -76,19 +77,29 @@ def main() -> None:
                 text = DEFAULT_TEXT
         
         print(f"\nGenerating speech for: '{text}'")
-        with tqdm(total=1, desc="Generating speech") as pbar:
-            audio, phonemes = generate_speech(model, text, voice, lang=args.lang, device=device)
-            pbar.update(1)
         
-        if audio is not None:
-            try:
-                if phonemes:
+        # Use the generator API
+        all_audio = []
+        generator = model(text, voice=voice, speed=args.speed, split_pattern=r'\n+')
+        
+        with tqdm(desc="Generating speech") as pbar:
+            for gs, ps, audio in generator:
+                if audio is not None:
+                    all_audio.append(audio)
                     try:
-                        print(f"Generated phonemes: {phonemes}")
+                        print(f"\nGenerated segment: {gs}")
+                        print(f"Phonemes: {ps}")
                     except UnicodeEncodeError:
-                        print("Generated phonemes: [Unicode display error - phonemes were generated but cannot be displayed]")
+                        print("\nGenerated segment: [Unicode display error]")
+                        print("Phonemes: [Unicode display error]")
+                    pbar.update(1)
+        
+        # Combine all audio segments
+        if all_audio:
+            final_audio = torch.cat(all_audio, dim=0)
+            try:
                 output_path = Path(args.output)
-                sf.write(output_path, audio, SAMPLE_RATE)
+                sf.write(output_path, final_audio, SAMPLE_RATE)
                 print(f"\nAudio saved to {output_path.absolute()}")
             except Exception as e:
                 print(f"Error saving output: {e}")
