@@ -1,7 +1,9 @@
-kokoro  # New official inference library
-misaki  # New G2P library for Kokoro
+kokoro  # Official Kokoro TTS library
+misaki  # G2P library for Kokoro
 torch
 soundfile
 huggingface-hub
 gradio>=4.0.0
-pydub  # For audio format conversion 
+pydub  # For audio format conversion
+espeakng-loader  # For loading espeak-ng library
+phonemizer-fork  # For phoneme generation 

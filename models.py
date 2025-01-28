@@ -3,7 +3,6 @@ from typing import Optional, Tuple, List
 import torch
 from kokoro import KPipeline
 import os
-import locale
 import json
 from pathlib import Path
 
@@ -12,31 +11,53 @@ os.environ["PYTHONIOENCODING"] = "utf-8"
 # Disable symlinks warning
 os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
 
-# Set locale for better encoding support
+# Initialize espeak-ng
 try:
-    locale.setlocale(locale.LC_ALL, '.UTF-8')
-except locale.Error:
-    try:
-        locale.setlocale(locale.LC_ALL, 'C.UTF-8')
-    except locale.Error:
-        pass  # Fall back to system default
+    from phonemizer.backend.espeak.wrapper import EspeakWrapper
+    import espeakng_loader
+    
+    # Set up espeak-ng paths
+    EspeakWrapper.library_path = espeakng_loader.get_library_path()
+    EspeakWrapper.data_path = espeakng_loader.get_data_path()
+except ImportError:
+    print("Warning: espeakng-loader not found. Installing required packages...")
+    import subprocess
+    subprocess.check_call(["pip", "install", "espeakng-loader", "phonemizer-fork"])
+    
+    # Try again after installation
+    from phonemizer.backend.espeak.wrapper import EspeakWrapper
+    import espeakng_loader
+    EspeakWrapper.library_path = espeakng_loader.get_library_path()
+    EspeakWrapper.data_path = espeakng_loader.get_data_path()
 
 # Initialize pipeline globally
 _pipeline = None
 
-def read_json_utf8(file_path: str) -> dict:
-    """Read JSON file with UTF-8 encoding"""
-    with open(file_path, 'r', encoding='utf-8') as f:
-        return json.load(f)
+def patch_json_load():
+    """Patch json.load to handle the specific encoding of config file"""
+    original_load = json.load
+    
+    def custom_load(fp, *args, **kwargs):
+        try:
+            # Try UTF-8 first
+            content = fp.read()
+            return json.loads(content)
+        except UnicodeDecodeError:
+            # If UTF-8 fails, try reading as bytes and decode manually
+            fp.seek(0)
+            content = fp.buffer.read() if hasattr(fp, 'buffer') else fp.read()
+            text = content.decode('utf-8', errors='replace')
+            return json.loads(text)
+    
+    json.load = custom_load
 
 def build_model(model_path: str, device: str) -> KPipeline:
     """Build and return the Kokoro pipeline"""
     global _pipeline
     if _pipeline is None:
         try:
-            # Monkey patch KPipeline's json loading
-            import kokoro.pipeline
-            kokoro.pipeline.json.load = lambda f: json.loads(f.read().encode('cp1252').decode('utf-8'))
+            # Patch json.load before creating pipeline
+            patch_json_load()
             _pipeline = KPipeline(device=device)
         except Exception as e:
             print(f"Error initializing pipeline: {e}")
@@ -57,12 +78,12 @@ def generate_speech(
     model: KPipeline,
     text: str,
     voice: torch.Tensor,
-    lang: str = 'a',
+    lang: str = 'a',  # Not used anymore since it's handled by the pipeline
     device: str = 'cpu'
 ) -> Tuple[Optional[torch.Tensor], Optional[str]]:
     """Generate speech using the Kokoro pipeline"""
     try:
-        generator = model(text, voice=voice, lang=lang)
+        generator = model(text, voice=voice)
         for gs, ps, audio in generator:
             return audio, ps  # Return first generated segment
     except Exception as e:
