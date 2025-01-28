@@ -39,7 +39,7 @@ The project has been updated with:
 - Git (for cloning the repository)
 - Internet connection (for initial model download)
 - FFmpeg (required for MP3/AAC conversion):
-  - Windows: Automatically installed during setup
+  - Windows: Manual installation (see setup instructions)
   - Linux: `sudo apt-get install ffmpeg`
   - macOS: `brew install ffmpeg`
 
@@ -57,24 +57,42 @@ OR
    - Select "Run as administrator"
    - Run the commands from there
 
-This is needed for proper symlink support in the Hugging Face cache system.
-If you skip this, the system will still work but may use more disk space.
+Additionally:
+- Use PowerShell or Command Prompt with UTF-8 encoding:
+  ```powershell
+  # Set console to UTF-8 mode
+  chcp 65001
+  ```
+- Or set system-wide UTF-8 encoding:
+  1. Open Windows Settings
+  2. Go to Time & Language > Language & Region
+  3. Click "Administrative language settings"
+  4. Click "Change system locale"
+  5. Check "Beta: Use Unicode UTF-8 for worldwide language support"
+  6. Restart your computer
+
+This ensures proper handling of international characters and model files.
 
 ## Dependencies
 
+Core Python packages:
 ```txt
-kokoro  # New official inference library
-misaki  # New G2P library for Kokoro
-torch
-soundfile
-huggingface-hub
-gradio>=4.0.0
-pydub  # For audio format conversion
+kokoro  # Official Kokoro TTS library
+misaki  # G2P library for Kokoro
+torch   # PyTorch for model inference
+soundfile  # Audio file handling
+huggingface-hub  # Model downloads
+gradio>=4.0.0  # Web interface
+pydub  # Audio format conversion
 ```
+
+System dependencies:
+- FFmpeg: Required for MP3/AAC conversion
+- Python 3.8+: Required for running the application
 
 ## Setup
 
-We use the modern `uv` package manager for faster and more reliable dependency management.
+We use Python's built-in virtual environment for dependency management.
 
 ### Windows
 ```powershell
@@ -88,10 +106,13 @@ cd Kokoro-TTS-Local
 # If you get a security error, try:
 powershell -ExecutionPolicy Bypass -File setup.ps1
 
-# Install FFmpeg manually if needed:
+# Install FFmpeg manually:
 # 1. Download from: https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip
 # 2. Extract to a folder
 # 3. Add the bin folder to your system PATH
+
+# When returning to the project later, always activate with:
+.\venv\Scripts\ActivateUTF8.ps1
 ```
 
 ### Linux/macOS
@@ -100,16 +121,15 @@ powershell -ExecutionPolicy Bypass -File setup.ps1
 git clone https://github.com/PierrunoYT/Kokoro-TTS-Local.git
 cd Kokoro-TTS-Local
 
-# Run the setup script (will install uv if not present)
+# Run the setup script
 chmod +x setup.sh
 ./setup.sh
 ```
 
 The setup scripts will:
-1. Install the `uv` package manager if not present
-2. Create a virtual environment
-3. Install all dependencies using `uv`
-4. Install FFmpeg for audio conversion
+1. Create a Python virtual environment
+2. Install all required dependencies
+3. Guide you through FFmpeg installation if needed
 
 ## Usage
 

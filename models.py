@@ -2,6 +2,22 @@
 from typing import Optional, Tuple, List
 import torch
 from kokoro import KPipeline
+import os
+import locale
+
+# Set environment variables for proper encoding
+os.environ["PYTHONIOENCODING"] = "utf-8"
+# Disable symlinks warning
+os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
+
+# Set locale for better encoding support
+try:
+    locale.setlocale(locale.LC_ALL, '.UTF-8')
+except locale.Error:
+    try:
+        locale.setlocale(locale.LC_ALL, 'C.UTF-8')
+    except locale.Error:
+        pass  # Fall back to system default
 
 # Initialize pipeline globally
 _pipeline = None
