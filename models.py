@@ -16,19 +16,23 @@ try:
     from phonemizer.backend.espeak.wrapper import EspeakWrapper
     import espeakng_loader
     
-    # Set up espeak-ng paths
-    EspeakWrapper.library_path = espeakng_loader.get_library_path()
-    EspeakWrapper.data_path = espeakng_loader.get_data_path()
+    # Set up espeak-ng paths using espeakng-loader
+    EspeakWrapper.set_library(espeakng_loader.get_library_path())
+    EspeakWrapper.set_data_path(espeakng_loader.get_data_path())
+    
+    # Make library available for other components
+    espeakng_loader.make_library_available()
 except ImportError:
     print("Warning: espeakng-loader not found. Installing required packages...")
     import subprocess
-    subprocess.check_call(["pip", "install", "espeakng-loader", "phonemizer-fork"])
+    subprocess.check_call(["pip", "install", "espeakng-loader>=0.1.6", "phonemizer-fork>=3.0.2"])
     
     # Try again after installation
     from phonemizer.backend.espeak.wrapper import EspeakWrapper
     import espeakng_loader
-    EspeakWrapper.library_path = espeakng_loader.get_library_path()
-    EspeakWrapper.data_path = espeakng_loader.get_data_path()
+    EspeakWrapper.set_library(espeakng_loader.get_library_path())
+    EspeakWrapper.set_data_path(espeakng_loader.get_data_path())
+    espeakng_loader.make_library_available()
 
 # Initialize pipeline globally
 _pipeline = None

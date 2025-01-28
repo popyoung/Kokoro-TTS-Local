@@ -8,6 +8,19 @@ if ! command -v python3 &> /dev/null; then
     exit 1
 fi
 
+# Install espeak-ng if not present
+if ! command -v espeak-ng &> /dev/null; then
+    echo "Installing espeak-ng..."
+    if [ "$(uname)" == "Linux" ]; then
+        sudo apt-get update
+        sudo apt-get install -y espeak-ng
+    elif [ "$(uname)" == "Darwin" ]; then
+        brew install espeak-ng
+    else
+        echo "Please install espeak-ng manually if not already installed."
+    fi
+fi
+
 # Create virtual environment if it doesn't exist
 if [ ! -d "venv" ]; then
     echo "Creating virtual environment..."
@@ -45,10 +58,18 @@ EOF
 echo "Activating virtual environment for setup..."
 . ./temp_activate
 
-# Install dependencies
-echo "Installing dependencies..."
+# Install core dependencies first
+echo "Installing core dependencies..."
 python3 -m pip install --upgrade pip
 pip install wheel setuptools
+pip install espeakng-loader>=0.1.6 phonemizer-fork>=3.0.2
+
+# Verify espeak-ng loader installation
+echo "Verifying espeak-ng installation..."
+python3 -c "import espeakng_loader; print('espeak-ng path:', espeakng_loader.get_library_path())"
+
+# Install remaining dependencies
+echo "Installing remaining dependencies..."
 pip install -r requirements.txt
 
 # Install FFmpeg if needed
