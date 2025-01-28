@@ -16,12 +16,20 @@ try:
     from phonemizer.backend.espeak.wrapper import EspeakWrapper
     import espeakng_loader
     
-    # Set up espeak-ng paths using espeakng-loader
-    EspeakWrapper.set_library(espeakng_loader.get_library_path())
-    EspeakWrapper.set_data_path(espeakng_loader.get_data_path())
-    
-    # Make library available for other components
+    # Make library available first
     espeakng_loader.make_library_available()
+    
+    # Set up espeak-ng paths using espeakng-loader
+    EspeakWrapper.library_path = espeakng_loader.get_library_path()
+    EspeakWrapper.data_path = espeakng_loader.get_data_path()
+    
+    # Verify espeak-ng is working
+    try:
+        from phonemizer import phonemize
+        phonemize('test', language='en-us')
+    except Exception as e:
+        print(f"Warning: espeak-ng test failed: {e}")
+        print("Some functionality may be limited")
 except ImportError:
     print("Warning: espeakng-loader not found. Installing required packages...")
     import subprocess
@@ -30,9 +38,9 @@ except ImportError:
     # Try again after installation
     from phonemizer.backend.espeak.wrapper import EspeakWrapper
     import espeakng_loader
-    EspeakWrapper.set_library(espeakng_loader.get_library_path())
-    EspeakWrapper.set_data_path(espeakng_loader.get_data_path())
     espeakng_loader.make_library_available()
+    EspeakWrapper.library_path = espeakng_loader.get_library_path()
+    EspeakWrapper.data_path = espeakng_loader.get_data_path()
 
 # Initialize pipeline globally
 _pipeline = None
