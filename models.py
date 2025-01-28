@@ -4,12 +4,45 @@ import torch
 from kokoro import KPipeline
 import os
 import json
+import codecs
 from pathlib import Path
 
 # Set environment variables for proper encoding
 os.environ["PYTHONIOENCODING"] = "utf-8"
 # Disable symlinks warning
 os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
+
+def patch_json_load():
+    """Patch json.load to handle UTF-8 encoded files with special characters"""
+    original_load = json.load
+    
+    def custom_load(fp, *args, **kwargs):
+        try:
+            # Try reading with UTF-8 encoding
+            if hasattr(fp, 'buffer'):
+                content = fp.buffer.read().decode('utf-8')
+            else:
+                content = fp.read()
+            return json.loads(content)
+        except UnicodeDecodeError:
+            # If UTF-8 fails, try with utf-8-sig for files with BOM
+            fp.seek(0)
+            content = fp.read()
+            if isinstance(content, bytes):
+                content = content.decode('utf-8-sig', errors='replace')
+            return json.loads(content)
+    
+    json.load = custom_load
+
+def load_config(config_path: str) -> dict:
+    """Load configuration file with proper encoding handling"""
+    try:
+        with codecs.open(config_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except UnicodeDecodeError:
+        # Fallback to utf-8-sig if regular utf-8 fails
+        with codecs.open(config_path, 'r', encoding='utf-8-sig') as f:
+            return json.load(f)
 
 # Initialize espeak-ng
 try:
@@ -35,10 +68,11 @@ try:
         print(f"Warning: espeak-ng test failed: {e}")
         print("Some functionality may be limited")
 
-except ImportError:
-    print("Warning: Required packages not found. Installing...")
+except ImportError as e:
+    print(f"Warning: Required packages not found: {e}")
+    print("Installing dependencies...")
     import subprocess
-    subprocess.check_call(["pip", "install", "espeakng-loader>=0.1.6", "phonemizer-fork>=3.0.2"])
+    subprocess.check_call(["pip", "install", "espeakng-loader", "phonemizer-fork"])
     
     # Try again after installation
     from phonemizer.backend.espeak.wrapper import EspeakWrapper
@@ -54,29 +88,13 @@ except ImportError:
 # Initialize pipeline globally
 _pipeline = None
 
-def patch_json_load():
-    """Patch json.load to handle the specific encoding of config file"""
-    original_load = json.load
-    
-    def custom_load(fp, *args, **kwargs):
-        try:
-            # Try UTF-8 first
-            content = fp.read()
-            return json.loads(content)
-        except UnicodeDecodeError:
-            # If UTF-8 fails, try reading as bytes and decode manually
-            fp.seek(0)
-            content = fp.buffer.read() if hasattr(fp, 'buffer') else fp.read()
-            text = content.decode('utf-8', errors='replace')
-            return json.loads(text)
-    
-    json.load = custom_load
-
 def build_model(model_path: str, device: str) -> KPipeline:
-    """Build and return the Kokoro pipeline"""
+    """Build and return the Kokoro pipeline with proper encoding configuration"""
     global _pipeline
     if _pipeline is None:
         try:
+            # Patch json loading before initializing pipeline
+            patch_json_load()
             # Initialize pipeline with American English by default
             _pipeline = KPipeline(device=device, lang_code='a')
         except Exception as e:
