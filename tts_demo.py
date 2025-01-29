@@ -1,7 +1,6 @@
 import torch
 from typing import Optional, Tuple, List
-from models import build_model, load_voice, generate_speech, list_available_voices
-import argparse
+from models import build_model, generate_speech, list_available_voices
 from tqdm.auto import tqdm
 import soundfile as sf
 from pathlib import Path
@@ -11,96 +10,126 @@ import numpy as np
 SAMPLE_RATE = 24000
 DEFAULT_MODEL_PATH = 'kokoro-v1_0.pth'
 DEFAULT_OUTPUT_FILE = 'output.wav'
-DEFAULT_LANGUAGE = 'a'  # Now documented: 'a' for American English, 'b' for British English
+DEFAULT_LANGUAGE = 'a'  # 'a' for American English, 'b' for British English
 DEFAULT_TEXT = "Hello, welcome to this text-to-speech test."
 
 # Configure tqdm for better Windows console support
-tqdm.monitor_interval = 0  # Disable monitor thread to prevent encoding issues
+tqdm.monitor_interval = 0
 
-def load_and_validate_voice(voice_name: str, device: str) -> torch.Tensor:
-    """Load the requested voice.
+def print_menu():
+    """Print the main menu options."""
+    print("\n=== Kokoro TTS Menu ===")
+    print("1. List available voices")
+    print("2. Generate speech")
+    print("3. Exit")
+    return input("Select an option (1-3): ").strip()
+
+def select_voice(voices: List[str]) -> str:
+    """Interactive voice selection."""
+    print("\nAvailable voices:")
+    for i, voice in enumerate(voices, 1):
+        print(f"{i}. {voice}")
     
-    Args:
-        voice_name: Name of the voice to load
-        device: Device to load the voice on ('cuda' or 'cpu')
-        
-    Returns:
-        Loaded voice tensor
-    """
-    return load_voice(voice_name, device)
+    while True:
+        try:
+            choice = input("\nSelect a voice number (or press Enter for default 'af_bella'): ").strip()
+            if not choice:
+                return "af_bella"
+            choice = int(choice)
+            if 1 <= choice <= len(voices):
+                return voices[choice - 1]
+            print("Invalid choice. Please try again.")
+        except ValueError:
+            print("Please enter a valid number.")
+
+def get_text_input() -> str:
+    """Get text input from user."""
+    print("\nEnter the text you want to convert to speech")
+    print("(or press Enter for default text)")
+    text = input("> ").strip()
+    return text if text else DEFAULT_TEXT
+
+def get_speed() -> float:
+    """Get speech speed from user."""
+    while True:
+        try:
+            speed = input("\nEnter speech speed (0.5-2.0, default 1.0): ").strip()
+            if not speed:
+                return 1.0
+            speed = float(speed)
+            if 0.5 <= speed <= 2.0:
+                return speed
+            print("Speed must be between 0.5 and 2.0")
+        except ValueError:
+            print("Please enter a valid number.")
 
 def main() -> None:
     try:
-        # Parse command line arguments
-        parser = argparse.ArgumentParser(description='Kokoro TTS Demo')
-        parser.add_argument('--text', type=str, help='Text to synthesize (optional)')
-        parser.add_argument('--voice', type=str, default='af_bella', help='Voice to use (default: af_bella)')
-        parser.add_argument('--list-voices', action='store_true', help='List all available voices')
-        parser.add_argument('--model', type=str, default=DEFAULT_MODEL_PATH, help=f'Path to model file (default: {DEFAULT_MODEL_PATH})')
-        parser.add_argument('--output', type=str, default=DEFAULT_OUTPUT_FILE, help=f'Output WAV file (default: {DEFAULT_OUTPUT_FILE})')
-        parser.add_argument('--lang', type=str, default=DEFAULT_LANGUAGE, help=f'Language code (default: {DEFAULT_LANGUAGE})')
-        parser.add_argument('--speed', type=float, default=1.0, help='Speech speed multiplier (default: 1.0)')
-        args = parser.parse_args()
-
-        if args.list_voices:
-            voices = list_available_voices()
-            print("\nAvailable voices:")
-            for voice in voices:
-                print(f"- {voice}")
-            return
-
         # Set up device
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
         print(f"Using device: {device}")
         
-        # Build model and load voice with progress indication
-        print("\nLoading model...")
+        # Build model
+        print("\nInitializing model...")
         with tqdm(total=1, desc="Building model") as pbar:
-            model = build_model(args.model, device)
+            model = build_model(DEFAULT_MODEL_PATH, device)
             pbar.update(1)
         
-        # Get text input
-        if args.text:
-            text = args.text
-        else:
-            print("\nEnter the text you want to convert to speech (or press Enter for default text):")
-            text = input("> ").strip()
-            if not text:
-                text = DEFAULT_TEXT
-        
-        print(f"\nGenerating speech for: '{text}'")
-        
-        # Use the generator API
-        all_audio = []
-        generator = model(text, voice=args.voice, speed=args.speed, split_pattern=r'\n+')
-        
-        with tqdm(desc="Generating speech") as pbar:
-            for gs, ps, audio in generator:
-                if audio is not None:
-                    # Convert numpy array to tensor if needed
-                    if isinstance(audio, np.ndarray):
-                        audio = torch.from_numpy(audio).float()
-                    all_audio.append(audio)
-                    try:
-                        print(f"\nGenerated segment: {gs}")
-                        print(f"Phonemes: {ps}")
-                    except UnicodeEncodeError:
-                        print("\nGenerated segment: [Unicode display error]")
-                        print("Phonemes: [Unicode display error]")
-                    pbar.update(1)
-        
-        # Combine all audio segments
-        if all_audio:
-            final_audio = torch.cat(all_audio, dim=0)
-            try:
-                output_path = Path(args.output)
-                sf.write(output_path, final_audio, SAMPLE_RATE)
-                print(f"\nAudio saved to {output_path.absolute()}")
-            except Exception as e:
-                print(f"Error saving output: {e}")
-                print("Audio generation was successful, but saving failed.")
-        else:
-            print("Error: Failed to generate audio")
+        while True:
+            choice = print_menu()
+            
+            if choice == "1":
+                # List voices
+                voices = list_available_voices()
+                print("\nAvailable voices:")
+                for voice in voices:
+                    print(f"- {voice}")
+                    
+            elif choice == "2":
+                # Generate speech
+                voices = list_available_voices()
+                if not voices:
+                    print("No voices found! Please check the voices directory.")
+                    continue
+                
+                # Get user inputs
+                voice = select_voice(voices)
+                text = get_text_input()
+                speed = get_speed()
+                
+                print(f"\nGenerating speech for: '{text}'")
+                print(f"Using voice: {voice}")
+                print(f"Speed: {speed}x")
+                
+                # Generate speech
+                all_audio = []
+                generator = model(text, voice=f"voices/{voice}.pt", speed=speed, split_pattern=r'\n+')
+                
+                with tqdm(desc="Generating speech") as pbar:
+                    for gs, ps, audio in generator:
+                        if audio is not None:
+                            if isinstance(audio, np.ndarray):
+                                audio = torch.from_numpy(audio).float()
+                            all_audio.append(audio)
+                            print(f"\nGenerated segment: {gs}")
+                            print(f"Phonemes: {ps}")
+                            pbar.update(1)
+                
+                # Save audio
+                if all_audio:
+                    final_audio = torch.cat(all_audio, dim=0)
+                    output_path = Path(DEFAULT_OUTPUT_FILE)
+                    sf.write(output_path, final_audio.numpy(), SAMPLE_RATE)
+                    print(f"\nAudio saved to {output_path.absolute()}")
+                else:
+                    print("Error: Failed to generate audio")
+                    
+            elif choice == "3":
+                print("\nGoodbye!")
+                break
+                
+            else:
+                print("\nInvalid choice. Please try again.")
         
     except Exception as e:
         print(f"Error in main: {e}")

@@ -123,16 +123,33 @@ def build_model(model_path: str, device: str) -> KPipeline:
                 print(f"Config downloaded to {config_path}")
             
             # Download voice files if they don't exist
-            voices_dir = "voices"
-            if not os.path.exists(voices_dir):
+            voices_dir = Path("voices")
+            if not voices_dir.exists() or not list(voices_dir.glob("*.pt")):
                 print("Downloading voice files...")
                 os.makedirs(voices_dir, exist_ok=True)
-                from huggingface_hub import snapshot_download
-                snapshot_download(
-                    repo_id="hexgrad/Kokoro-82M",
-                    local_dir=".",
-                    allow_patterns="voices/*"
-                )
+                
+                # List of voice files to download
+                voice_files = [
+                    "af_alloy.pt", "af_aoede.pt", "af_bella.pt", "af_jessica.pt",
+                    "af_kore.pt", "af_nicole.pt", "af_nova.pt", "af_river.pt",
+                    "af_sarah.pt", "af_sky.pt", "am_adam.pt", "am_echo.pt",
+                    "am_eric.pt", "am_fenrir.pt", "am_liam.pt", "am_michael.pt",
+                    "am_onyx.pt", "am_puck.pt", "bf_alice.pt", "bf_emma.pt",
+                    "bf_isabella.pt", "bf_lily.pt", "bm_daniel.pt", "bm_fable.pt",
+                    "bm_george.pt", "bm_lewis.pt", "ff_siwis.pt", "hf_alpha.pt",
+                    "hf_beta.pt", "hm_omega.pt", "hm_psi.pt"
+                ]
+                
+                from huggingface_hub import hf_hub_download
+                for voice_file in voice_files:
+                    voice_path = voices_dir / voice_file
+                    if not voice_path.exists():
+                        print(f"Downloading {voice_file}...")
+                        hf_hub_download(
+                            repo_id="hexgrad/Kokoro-82M",
+                            filename=f"voices/{voice_file}",
+                            local_dir="."
+                        )
                 print("Voice files downloaded")
             
             # Initialize pipeline with American English by default

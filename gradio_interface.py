@@ -29,8 +29,8 @@ import soundfile as sf
 from pydub import AudioSegment
 import torch
 from models import (
-    list_available_voices, build_model, load_voice,
-    generate_speech, load_and_validate_voice
+    list_available_voices, build_model,
+    generate_speech
 )
 
 # Global configuration
@@ -49,193 +49,125 @@ def get_available_voices():
         print("Available voices:", voices)
         return voices
     except Exception as e:
-        print(f"Error retrieving voices: {e}")
+        print(f"Error getting voices: {e}")
         return []
 
 def convert_audio(input_path: str, output_path: str, format: str):
-    """Convert audio to specified format using pydub."""
+    """Convert audio to specified format."""
     try:
+        if format == "wav":
+            return input_path
         audio = AudioSegment.from_wav(input_path)
         if format == "mp3":
             audio.export(output_path, format="mp3", bitrate="192k")
         elif format == "aac":
             audio.export(output_path, format="aac", bitrate="192k")
-        else:  # wav
-            shutil.copy2(input_path, output_path)
-        return True
+        return output_path
     except Exception as e:
         print(f"Error converting audio: {e}")
-        return False
+        return input_path
 
 def generate_tts_with_logs(voice_name, text, format):
-    """Generate TTS audio with real-time logging and format conversion."""
+    """Generate TTS audio with progress logging."""
     global model
     
-    if not text.strip():
-        return "❌ Error: Text required", None
-    
-    logs_text = ""
     try:
-        # Initialize model if not done yet
+        # Initialize model if needed
         if model is None:
-            logs_text += "Loading model...\n"
-            model = build_model("kokoro-v1_0.pth", device)  # Updated to v1.0
+            print("Initializing model...")
+            model = build_model(None, device)
         
-        # Load voice
-        logs_text += f"Loading voice: {voice_name}\n"
-        yield logs_text, None
-        voice = load_and_validate_voice(voice_name, device)
+        # Create output directory
+        os.makedirs(DEFAULT_OUTPUT_DIR, exist_ok=True)
+        
+        # Generate base filename from text
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        base_name = f"tts_{timestamp}"
+        wav_path = os.path.join(DEFAULT_OUTPUT_DIR, f"{base_name}.wav")
         
         # Generate speech
-        logs_text += f"Generating speech for: '{text}'\n"
-        yield logs_text, None
+        print(f"\nGenerating speech for: '{text}'")
+        print(f"Using voice: {voice_name}")
         
-        # Use the generator API
-        generator = model(text, voice=voice, speed=1.0, split_pattern=r'\n+')
-        audio = None
-        phonemes = None
+        generator = model(text, voice=f"voices/{voice_name}.pt", speed=1.0, split_pattern=r'\n+')
         
-        # Process all segments
         all_audio = []
-        for gs, ps, segment_audio in generator:
-            if segment_audio is not None:
-                all_audio.append(segment_audio)
-                phonemes = ps  # Keep the last phonemes
-                logs_text += f"✓ Generated segment: {gs}\n"
-                yield logs_text, None
+        for gs, ps, audio in generator:
+            if audio is not None:
+                if isinstance(audio, np.ndarray):
+                    audio = torch.from_numpy(audio).float()
+                all_audio.append(audio)
+                print(f"Generated segment: {gs}")
+                print(f"Phonemes: {ps}")
         
-        # Combine all audio segments
-        if all_audio:
-            audio = torch.cat(all_audio, dim=0)
+        if not all_audio:
+            raise Exception("No audio generated")
+            
+        # Combine audio segments and save
+        final_audio = torch.cat(all_audio, dim=0)
+        sf.write(wav_path, final_audio.numpy(), SAMPLE_RATE)
         
-        if audio is not None and phonemes:
-            try:
-                logs_text += f"Generated phonemes: {phonemes}\n"
-            except UnicodeEncodeError:
-                logs_text += "Generated phonemes: [Unicode display error]\n"
-            
-            # Save temporary WAV file
-            temp_wav = "output.wav"
-            sf.write(temp_wav, audio, SAMPLE_RATE)
-            
-            # Convert to desired format
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"output_{timestamp}.{format}"
-            os.makedirs(DEFAULT_OUTPUT_DIR, exist_ok=True)
-            output_path = Path(DEFAULT_OUTPUT_DIR) / filename
-            
-            if convert_audio(temp_wav, str(output_path), format):
-                logs_text += f"✅ Saved: {output_path}\n"
-                os.remove(temp_wav)
-                yield logs_text, str(output_path)
-            else:
-                logs_text += "❌ Audio conversion failed\n"
-                yield logs_text, None
-        else:
-            logs_text += "❌ Failed to generate audio\n"
-            yield logs_text, None
-
+        # Convert to requested format if needed
+        if format != "wav":
+            output_path = os.path.join(DEFAULT_OUTPUT_DIR, f"{base_name}.{format}")
+            return convert_audio(wav_path, output_path, format)
+        
+        return wav_path
+        
     except Exception as e:
-        logs_text += f"❌ Error: {str(e)}\n"
-        yield logs_text, None
+        print(f"Error generating speech: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
 
 def create_interface(server_name="0.0.0.0", server_port=7860):
-    """Create and configure Gradio interface with network sharing capabilities.
+    """Create and launch the Gradio interface."""
     
-    Creates a web interface with:
-    - Text input area
-    - Voice model selection
-    - Audio format selection (WAV/MP3/AAC)
-    - Real-time progress logging
-    - Audio playback and download
-    - Example inputs for testing
-    
-    Args:
-        server_name (str): Server address for network sharing (default: "0.0.0.0" for all interfaces)
-        server_port (int): Port number to serve on (default: 7860)
-    
-    Returns:
-        gr.Blocks: Configured Gradio interface ready for launching
-    """
-    theme = gr.themes.Base(
-        primary_hue="zinc",
-        secondary_hue="slate",
-        neutral_hue="zinc",
-        font=gr.themes.GoogleFont("Inter")
-    )
-
-    with gr.Blocks(theme=theme) as demo:
-        gr.Markdown(
-            """
-            <div style="text-align: center; margin-bottom: 2rem;">
-                <h1 style="font-size: 2.5em; margin-bottom: 0.5rem;">🎙️ Kokoro-TTS Local Generator</h1>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; background: rgba(0,0,0,0.05); padding: 1.5rem; border-radius: 8px; margin-top: 1rem;">
-                    <div style="text-align: left;">
-                        <h3>✨ Instructions</h3>
-                        <p>1. Type or paste your text into the input box</p>
-                        <p>2. Choose a voice from the dropdown menu</p>
-                        <p>3. Click Generate and wait for processing</p>
-                        <p>4. Play or download your generated audio</p>
-                    </div>
-                    <div style="text-align: left; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 2rem;">
-                        <h3>Introduction</h3>
-                        <p>A local text-to-speech system using the Kokoro-82M model for natural-sounding voice synthesis.</p>
-                        <p>Based on <a href="https://github.com/PierrunoYT/Kokoro-TTS-Local">Kokoro-TTS-Local</a> by <a href="https://github.com/PierrunoYT">PierrunoYT</a></p>
-                        <p>Model: <a href="https://huggingface.co/hexgrad/Kokoro-82M">Kokoro-82M</a> by <a href="https://huggingface.co/hexgrad">hexgrad</a></p>
-                        <p>Gradio Interface by ChatGPT, Claude & <a href="https://github.com/teslanaut">Teslanaut</a></p>
-                    </div>
-                </div>
-            </div>
-            """
-        )
+    # Get available voices
+    voices = get_available_voices()
+    if not voices:
+        print("No voices found! Please check the voices directory.")
+        return
         
-        text_input = gr.Textbox(
-            label="✍️ Text to Synthesize",
-            placeholder="Enter text here...",
-            lines=3
-        )
+    # Create interface
+    with gr.Blocks(title="Kokoro TTS Generator") as interface:
+        gr.Markdown("# Kokoro TTS Generator")
         
-        generate_button = gr.Button("🔊 Generate", variant="primary")
-
         with gr.Row():
-            with gr.Column(scale=1):
-                with gr.Group():
-                    voice = gr.Dropdown(
-                        choices=get_available_voices(),
-                        label="🗣️ Select Voice",
-                        value="af_bella"
-                    )
-                    format = gr.Radio(
-                        choices=["wav", "mp3", "aac"],
-                        label="🎵 Output Format",
-                        value="wav"
-                    )
-            
-            with gr.Column(scale=2):
-                audio_output = gr.Audio(
-                    label="🎧 Output",
-                    type="filepath"
+            with gr.Column():
+                voice = gr.Dropdown(
+                    choices=voices,
+                    value=voices[0] if voices else None,
+                    label="Voice"
                 )
-        
-        logs_output = gr.Textbox(
-            label="📋 Process Log",
-            lines=8,
-            interactive=False
-        )
-        
-        generate_button.click(
+                text = gr.Textbox(
+                    lines=3,
+                    placeholder="Enter text to convert to speech...",
+                    label="Text"
+                )
+                format = gr.Radio(
+                    choices=["wav", "mp3", "aac"],
+                    value="wav",
+                    label="Output Format"
+                )
+                generate = gr.Button("Generate Speech")
+            
+            with gr.Column():
+                output = gr.Audio(label="Generated Audio")
+                
+        generate.click(
             fn=generate_tts_with_logs,
-            inputs=[voice, text_input, format],
-            outputs=[logs_output, audio_output]
+            inputs=[voice, text, format],
+            outputs=output
         )
-
-    return demo
+        
+    # Launch interface
+    interface.launch(
+        server_name=server_name,
+        server_port=server_port,
+        share=True
+    )
 
 if __name__ == "__main__":
-    demo = create_interface()
-    demo.launch(
-        server_name="0.0.0.0",  # Allow external connections
-        server_port=7860,       # Default Gradio port
-        share=True,             # Enable Gradio sharing link
-        show_error=True
-    )
+    import numpy as np
+    create_interface()
