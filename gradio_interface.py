@@ -28,6 +28,7 @@ from pathlib import Path
 import soundfile as sf
 from pydub import AudioSegment
 import torch
+import numpy as np
 from models import (
     list_available_voices, build_model,
     generate_speech
@@ -169,5 +170,4 @@ def create_interface(server_name="0.0.0.0", server_port=7860):
     )
 
 if __name__ == "__main__":
-    import numpy as np
     create_interface()
