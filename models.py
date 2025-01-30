@@ -165,7 +165,10 @@ def build_model(model_path: str, device: str) -> KPipeline:
                 print("Voice files downloaded")
             
             # Initialize pipeline with American English by default
-            _pipeline = KPipeline(device=device, lang_code='a', config_path=config_path, model_path=model_path)
+            _pipeline = KPipeline(lang_code='a', config_path=config_path, model_path=model_path)
+            # Set device after initialization
+            _pipeline.device = device
+            _pipeline.to(device)
         except Exception as e:
             print(f"Error initializing pipeline: {e}")
             raise
