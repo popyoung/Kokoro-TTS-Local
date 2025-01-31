@@ -13,6 +13,17 @@ os.environ["PYTHONIOENCODING"] = "utf-8"
 # Disable symlinks warning
 os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
 
+# List of available voice files
+VOICE_FILES = [
+    "af_alloy.pt", "af_aoede.pt", "af_bella.pt", "af_jessica.pt",
+    "af_kore.pt", "af_nicole.pt", "af_nova.pt", "af_river.pt",
+    "af_sarah.pt", "af_sky.pt", "am_adam.pt", "am_echo.pt",
+    "am_eric.pt", "am_fenrir.pt", "am_liam.pt", "am_michael.pt",
+    "am_onyx.pt", "am_puck.pt", "bf_alice.pt", "bf_emma.pt",
+    "bf_isabella.pt", "bf_lily.pt", "bm_daniel.pt", "bm_fable.pt",
+    "bm_george.pt", "bm_lewis.pt"
+]
+
 # Patch KPipeline's load_voice method to use weights_only=False
 original_load_voice = KPipeline.load_voice
 
@@ -21,7 +32,15 @@ def patched_load_voice(self, voice_path):
     if not os.path.exists(voice_path):
         raise FileNotFoundError(f"Voice file not found: {voice_path}")
     voice_name = Path(voice_path).stem
-    self.voices[voice_name] = torch.load(voice_path, weights_only=False).to(self.device)
+    voice_model = torch.load(voice_path, weights_only=False)
+    if voice_model is None:
+        raise ValueError(f"Failed to load voice model from {voice_path}")
+    # Ensure device is set
+    if not hasattr(self, 'device'):
+        self.device = 'cpu'
+    # Move model to device and store in voices dictionary
+    self.voices[voice_name] = voice_model.to(self.device)
+    return self.voices[voice_name]
 
 KPipeline.load_voice = patched_load_voice
 
@@ -140,20 +159,8 @@ def build_model(model_path: str, device: str) -> KPipeline:
                 print("Downloading voice files...")
                 os.makedirs(voices_dir, exist_ok=True)
                 
-                # List of voice files to download
-                voice_files = [
-                    "af_alloy.pt", "af_aoede.pt", "af_bella.pt", "af_jessica.pt",
-                    "af_kore.pt", "af_nicole.pt", "af_nova.pt", "af_river.pt",
-                    "af_sarah.pt", "af_sky.pt", "am_adam.pt", "am_echo.pt",
-                    "am_eric.pt", "am_fenrir.pt", "am_liam.pt", "am_michael.pt",
-                    "am_onyx.pt", "am_puck.pt", "bf_alice.pt", "bf_emma.pt",
-                    "bf_isabella.pt", "bf_lily.pt", "bm_daniel.pt", "bm_fable.pt",
-                    "bm_george.pt", "bm_lewis.pt", "ff_siwis.pt", "hf_alpha.pt",
-                    "hf_beta.pt", "hm_omega.pt", "hm_psi.pt"
-                ]
-                
                 from huggingface_hub import hf_hub_download
-                for voice_file in voice_files:
+                for voice_file in VOICE_FILES:
                     voice_path = voices_dir / voice_file
                     if not voice_path.exists():
                         print(f"Downloading {voice_file}...")
@@ -166,8 +173,27 @@ def build_model(model_path: str, device: str) -> KPipeline:
             
             # Initialize pipeline with American English by default
             _pipeline = KPipeline(lang_code='a')
+            if _pipeline is None:
+                raise ValueError("Failed to initialize KPipeline - pipeline is None")
+                
             # Store device parameter for reference in other operations
             _pipeline.device = device
+            
+            # Initialize voices dictionary if it doesn't exist
+            if not hasattr(_pipeline, 'voices'):
+                _pipeline.voices = {}
+            
+            # Try to load the first available voice
+            for voice_file in VOICE_FILES:
+                voice_path = f"voices/{voice_file}"
+                if os.path.exists(voice_path):
+                    try:
+                        _pipeline.load_voice(voice_path)
+                        break  # Successfully loaded a voice
+                    except Exception as e:
+                        print(f"Warning: Failed to load voice {voice_file}: {e}")
+                        continue
+            
         except Exception as e:
             print(f"Error initializing pipeline: {e}")
             raise
@@ -177,8 +203,20 @@ def list_available_voices() -> List[str]:
     """List all available voice models"""
     voices_dir = Path("voices")
     if not voices_dir.exists():
+        print(f"Warning: Voices directory {voices_dir.absolute()} does not exist")
         return []
-    return [f.stem for f in voices_dir.glob("*.pt")]
+        
+    # Get all .pt files in the voices directory
+    voice_files = list(voices_dir.glob("*.pt"))
+    if not voice_files:
+        print(f"Warning: No voice files found in {voices_dir.absolute()}")
+        # Try to find voice files in the root directory
+        voice_files = list(Path(".").glob("voices/*.pt"))
+        if not voice_files:
+            print("Warning: No voice files found in ./voices/ either")
+            return []
+            
+    return [f.stem for f in voice_files]
 
 def load_voice(voice_name: str, device: str) -> torch.Tensor:
     """Load a voice model"""
@@ -212,12 +250,33 @@ def generate_speech(
         Tuple of (audio tensor, phonemes string) or (None, None) on error
     """
     try:
-        # Format voice path
-        voice_path = f"voices/{voice}.pt"
+        if model is None:
+            raise ValueError("Model is None - pipeline not properly initialized")
+            
+        # Initialize voices dictionary if it doesn't exist
+        if not hasattr(model, 'voices'):
+            model.voices = {}
+            
+        # Ensure device is set
+        if not hasattr(model, 'device'):
+            model.device = device
+            
+        # Format voice path and ensure voice is loaded
+        voice_name = voice.replace('.pt', '')
+        voice_path = f"voices/{voice_name}.pt"
         if not os.path.exists(voice_path):
             raise ValueError(f"Voice file not found: {voice_path}")
             
+        # Ensure voice is loaded before generating
+        if voice_name not in model.voices:
+            print(f"Loading voice {voice_name}...")
+            model.load_voice(voice_path)
+            
+        if voice_name not in model.voices:
+            raise ValueError(f"Failed to load voice {voice_name}")
+            
         # Generate speech with the new API
+        print(f"Generating speech with device: {model.device}")
         generator = model(
             text, 
             voice=voice_path,
@@ -230,7 +289,7 @@ def generate_speech(
             if audio is not None:
                 if isinstance(audio, np.ndarray):
                     audio = torch.from_numpy(audio).float()
-            return audio, ps
+                return audio, ps
             
         return None, None
     except Exception as e:
