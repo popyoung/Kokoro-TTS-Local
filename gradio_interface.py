@@ -46,7 +46,18 @@ model = None
 def get_available_voices():
     """Get list of available voice models."""
     try:
+        # Initialize model to trigger voice downloads
+        global model
+        if model is None:
+            print("Initializing model and downloading voices...")
+            model = build_model(None, device)
+        
         voices = list_available_voices()
+        if not voices:
+            print("No voices found after initialization. Attempting to download...")
+            download_voice_files()  # Try downloading again
+            voices = list_available_voices()
+            
         print("Available voices:", voices)
         return voices
     except Exception as e:

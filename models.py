@@ -7,6 +7,7 @@ import json
 import codecs
 from pathlib import Path
 import numpy as np
+import shutil
 
 # Set environment variables for proper encoding
 os.environ["PYTHONIOENCODING"] = "utf-8"
@@ -120,6 +121,53 @@ except ImportError as e:
 # Initialize pipeline globally
 _pipeline = None
 
+def download_voice_files():
+    """Download voice files from Hugging Face."""
+    voices_dir = Path("voices")
+    voices_dir.mkdir(exist_ok=True)
+    
+    from huggingface_hub import hf_hub_download
+    downloaded_voices = []
+    
+    print("\nDownloading voice files...")
+    for voice_file in VOICE_FILES:
+        try:
+            # Full path where the voice file should be
+            voice_path = voices_dir / voice_file
+            
+            if not voice_path.exists():
+                print(f"Downloading {voice_file}...")
+                # Download to a temporary location first
+                temp_path = hf_hub_download(
+                    repo_id="hexgrad/Kokoro-82M",
+                    filename=f"voices/{voice_file}",
+                    local_dir="temp_voices",
+                    force_download=True
+                )
+                
+                # Move the file to the correct location
+                os.makedirs(os.path.dirname(voice_path), exist_ok=True)
+                shutil.move(temp_path, voice_path)
+                downloaded_voices.append(voice_file)
+                print(f"Successfully downloaded {voice_file}")
+            else:
+                print(f"Voice file {voice_file} already exists")
+                downloaded_voices.append(voice_file)
+        except Exception as e:
+            print(f"Warning: Failed to download {voice_file}: {e}")
+            continue
+    
+    # Clean up temporary directory
+    if os.path.exists("temp_voices"):
+        shutil.rmtree("temp_voices")
+    
+    if not downloaded_voices:
+        print("Warning: No voice files could be downloaded. Please check your internet connection.")
+    else:
+        print(f"Successfully processed {len(downloaded_voices)} voice files")
+    
+    return downloaded_voices
+
 def build_model(model_path: str, device: str) -> KPipeline:
     """Build and return the Kokoro pipeline with proper encoding configuration"""
     global _pipeline
@@ -138,7 +186,8 @@ def build_model(model_path: str, device: str) -> KPipeline:
                 model_path = hf_hub_download(
                     repo_id="hexgrad/Kokoro-82M",
                     filename="kokoro-v1_0.pth",
-                    local_dir="."
+                    local_dir=".",
+                    force_download=True
                 )
                 print(f"Model downloaded to {model_path}")
             
@@ -149,27 +198,17 @@ def build_model(model_path: str, device: str) -> KPipeline:
                 config_path = hf_hub_download(
                     repo_id="hexgrad/Kokoro-82M",
                     filename="config.json",
-                    local_dir="."
+                    local_dir=".",
+                    force_download=True
                 )
                 print(f"Config downloaded to {config_path}")
             
-            # Download voice files if they don't exist
-            voices_dir = Path("voices")
-            if not voices_dir.exists() or not list(voices_dir.glob("*.pt")):
-                print("Downloading voice files...")
-                os.makedirs(voices_dir, exist_ok=True)
-                
-                from huggingface_hub import hf_hub_download
-                for voice_file in VOICE_FILES:
-                    voice_path = voices_dir / voice_file
-                    if not voice_path.exists():
-                        print(f"Downloading {voice_file}...")
-                        hf_hub_download(
-                            repo_id="hexgrad/Kokoro-82M",
-                            filename=f"voices/{voice_file}",
-                            local_dir="."
-                        )
-                print("Voice files downloaded")
+            # Download voice files
+            downloaded_voices = download_voice_files()
+            
+            if not downloaded_voices:
+                print("Error: No voice files available. Cannot proceed.")
+                raise ValueError("No voice files available")
             
             # Initialize pipeline with American English by default
             _pipeline = KPipeline(lang_code='a')
@@ -184,11 +223,12 @@ def build_model(model_path: str, device: str) -> KPipeline:
                 _pipeline.voices = {}
             
             # Try to load the first available voice
-            for voice_file in VOICE_FILES:
+            for voice_file in downloaded_voices:
                 voice_path = f"voices/{voice_file}"
                 if os.path.exists(voice_path):
                     try:
                         _pipeline.load_voice(voice_path)
+                        print(f"Successfully loaded voice: {voice_file}")
                         break  # Successfully loaded a voice
                     except Exception as e:
                         print(f"Warning: Failed to load voice {voice_file}: {e}")
@@ -202,20 +242,34 @@ def build_model(model_path: str, device: str) -> KPipeline:
 def list_available_voices() -> List[str]:
     """List all available voice models"""
     voices_dir = Path("voices")
+    
+    # Create voices directory if it doesn't exist
     if not voices_dir.exists():
-        print(f"Warning: Voices directory {voices_dir.absolute()} does not exist")
+        print(f"Creating voices directory at {voices_dir.absolute()}")
+        voices_dir.mkdir(exist_ok=True)
         return []
-        
+    
     # Get all .pt files in the voices directory
     voice_files = list(voices_dir.glob("*.pt"))
+    
+    # If no voice files found in voices directory
     if not voice_files:
-        print(f"Warning: No voice files found in {voices_dir.absolute()}")
-        # Try to find voice files in the root directory
-        voice_files = list(Path(".").glob("voices/*.pt"))
-        if not voice_files:
-            print("Warning: No voice files found in ./voices/ either")
-            return []
-            
+        print(f"No voice files found in {voices_dir.absolute()}")
+        # Try to find voice files in the root directory's voices folder
+        root_voices = list(Path(".").glob("voices/*.pt"))
+        if root_voices:
+            print("Found voice files in root voices directory, moving them...")
+            for voice_file in root_voices:
+                target_path = voices_dir / voice_file.name
+                if not target_path.exists():
+                    shutil.move(str(voice_file), str(target_path))
+            # Recheck voices directory
+            voice_files = list(voices_dir.glob("*.pt"))
+    
+    if not voice_files:
+        print("No voice files found. Please run the application again to download voices.")
+        return []
+    
     return [f.stem for f in voice_files]
 
 def load_voice(voice_name: str, device: str) -> torch.Tensor:
