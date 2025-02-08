@@ -16,13 +16,28 @@ os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
 
 # List of available voice files
 VOICE_FILES = [
+    # American Female voices
     "af_alloy.pt", "af_aoede.pt", "af_bella.pt", "af_jessica.pt",
     "af_kore.pt", "af_nicole.pt", "af_nova.pt", "af_river.pt",
-    "af_sarah.pt", "af_sky.pt", "am_adam.pt", "am_echo.pt",
-    "am_eric.pt", "am_fenrir.pt", "am_liam.pt", "am_michael.pt",
-    "am_onyx.pt", "am_puck.pt", "bf_alice.pt", "bf_emma.pt",
-    "bf_isabella.pt", "bf_lily.pt", "bm_daniel.pt", "bm_fable.pt",
-    "bm_george.pt", "bm_lewis.pt"
+    "af_sarah.pt", "af_sky.pt",
+    # American Male voices
+    "am_adam.pt", "am_echo.pt", "am_eric.pt", "am_fenrir.pt",
+    "am_liam.pt", "am_michael.pt", "am_onyx.pt", "am_puck.pt",
+    "am_santa.pt",
+    # British Female voices
+    "bf_alice.pt", "bf_emma.pt", "bf_isabella.pt", "bf_lily.pt",
+    # British Male voices
+    "bm_daniel.pt", "bm_fable.pt", "bm_george.pt", "bm_lewis.pt",
+    # Special voices
+    "el_dora.pt", "em_alex.pt", "em_santa.pt",
+    "ff_siwis.pt",
+    "hf_alpha.pt", "hf_beta.pt",
+    "hm_omega.pt", "hm_psi.pt",
+    "jf_sara.pt", "jm_nicola.pt",
+    "jf_alpha.pt", "jf_gongtsuene.pt", "jf_nezumi.pt", "jf_tebukuro.pt",
+    "jm_kumo.pt",
+    "pf_dora.pt", "pm_alex.pt", "pm_santa.pt",
+    "zf_xiaobei.pt", "zf_xiaoni.pt", "zf_xiaoqiao.pt", "zf_xiaoyi.pt"
 ]
 
 # Patch KPipeline's load_voice method to use weights_only=False
