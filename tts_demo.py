@@ -5,6 +5,8 @@ from tqdm.auto import tqdm
 import soundfile as sf
 from pathlib import Path
 import numpy as np
+import time
+import os
 
 # Constants
 SAMPLE_RATE = 24000
@@ -63,6 +65,28 @@ def get_speed() -> float:
         except ValueError:
             print("Please enter a valid number.")
 
+def save_audio_with_retry(audio_data: np.ndarray, sample_rate: int, output_path: Path, max_retries: int = 3, retry_delay: float = 1.0) -> bool:
+    """
+    Attempt to save audio data to file with retry logic.
+    Returns True if successful, False otherwise.
+    """
+    for attempt in range(max_retries):
+        try:
+            sf.write(output_path, audio_data, sample_rate)
+            return True
+        except Exception as e:
+            if attempt < max_retries - 1:
+                print(f"\nFailed to save audio (attempt {attempt + 1}/{max_retries})")
+                print("The output file might be in use by another program (e.g., media player).")
+                print(f"Please close any programs that might be using '{output_path}'")
+                print(f"Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+            else:
+                print(f"\nError: Could not save audio after {max_retries} attempts.")
+                print(f"Please ensure '{output_path}' is not open in any other program and try again.")
+                return False
+    return False
+
 def main() -> None:
     try:
         # Set up device
@@ -119,8 +143,8 @@ def main() -> None:
                 if all_audio:
                     final_audio = torch.cat(all_audio, dim=0)
                     output_path = Path(DEFAULT_OUTPUT_FILE)
-                    sf.write(output_path, final_audio.numpy(), SAMPLE_RATE)
-                    print(f"\nAudio saved to {output_path.absolute()}")
+                    if save_audio_with_retry(final_audio.numpy(), SAMPLE_RATE, output_path):
+                        print(f"\nAudio saved to {output_path.absolute()}")
                 else:
                     print("Error: Failed to generate audio")
                     
