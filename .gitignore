@@ -31,10 +31,8 @@ ENV/
 *.swo
 
 # Project specific
-output*.wav
 *.pth
 *.onnx
 voices/
-voices/*.pt
-voices/**/*.pt
 config.json
+outputs/

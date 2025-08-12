@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kokoro TTS API JavaScript演示</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+            font-weight: bold;
+        }
+        input, select, textarea, button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .error {
+            color: red;
+            background-color: #f8d7da;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success {
+            color: green;
+            background-color: #d4edda;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        #voiceList {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .voice-item {
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        .voice-item:last-child {
+            border-bottom: none;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Kokoro TTS API JavaScript演示</h1>
+        
+        <!-- 语音列表获取 -->
+        <div class="section">
+            <h2>1. 获取可用语音列表</h2>
+            <button onclick="getVoices(event)">获取语音列表</button>
+            <div id="voiceList"></div>
+        </div>
+
+        <!-- 文本转语音（多朗读者随机选择） -->
+        <div class="section">
+            <h2>2. 文本转语音</h2>
+            <label for="textInput">输入文本：</label>
+            <textarea id="textInput" rows="4" placeholder="请输入要转换的文本...">Hello, this is a test of Kokoro TTS API.</textarea>
+            
+            <label>选择朗读者（随机选择）：</label>
+            <div id="multiVoiceOptions"></div>
+            
+            <label for="speedInput">语速：</label>
+            <input type="range" id="speedInput" min="0.1" max="3" step="0.1" value="1">
+            <span id="speedValue">1.0</span>
+            
+            <label for="formatSelect">输出格式：</label>
+            <select id="formatSelect">
+                <option value="wav">WAV</option>
+                <option value="mp3">MP3</option>
+                <option value="flac">FLAC</option>
+            </select>
+            
+            <button onclick="generateSpeech(event)">生成语音</button>
+            <div id="generationResult"></div>
+        </div>
+
+        <!-- 音频播放 -->
+        <div class="section">
+            <h2>4. 音频播放</h2>
+            <audio id="audioPlayer" controls style="width: 100%;"></audio>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';
+        let voices = [];
+
+        // 更新语速显示
+        document.getElementById('speedInput').addEventListener('input', function(e) {
+            document.getElementById('speedValue').textContent = e.target.value;
+        });
+
+        // 获取语音列表
+        async function getVoices(event) {
+            const button = event.target;
+            button.disabled = true;
+            button.innerHTML = '<span class="loading"></span> 获取中...';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/voices`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                voices = await response.json();
+                displayVoices(voices);
+                populateMultiVoiceOptions(voices);
+                
+                showSuccess('语音列表获取成功！');
+            } catch (error) {
+                showError(`获取语音列表失败: ${error.message}`);
+            } finally {
+                button.disabled = false;
+                button.textContent = '获取语音列表';
+            }
+        }
+
+        // 显示语音列表
+        function displayVoices(voices) {
+            const voiceList = document.getElementById('voiceList');
+            voiceList.innerHTML = `<h3>共找到 ${voices.length} 个语音</h3>`;
+            
+            voices.forEach(voice => {
+                const div = document.createElement('div');
+                div.className = 'voice-item';
+                div.innerHTML = `
+                    <strong>${voice.name}</strong> - 
+                    ${voice.language} (${voice.gender})
+                `;
+                voiceList.appendChild(div);
+            });
+        }
+
+
+
+        // 填充多朗读者选项
+        function populateMultiVoiceOptions(voices) {
+            const container = document.getElementById('multiVoiceOptions');
+            container.innerHTML = '';
+            
+            // 限制显示前20个语音作为示例
+            const limitedVoices = voices.slice(0, 20);
+            limitedVoices.forEach(voice => {
+                const label = document.createElement('label');
+                label.innerHTML = `
+                    <input type="checkbox" class="voice-checkbox" value="${voice.name}">
+                    ${voice.name} - ${voice.language} (${voice.gender})
+                `;
+                container.appendChild(label);
+            });
+        }
+
+        // 生成语音
+        async function generateSpeech(event) {
+            const button = event.target;
+            button.disabled = true;
+            button.innerHTML = '<span class="loading"></span> 生成中...';
+
+            const text = document.getElementById('textInput').value;
+            const selectedVoices = Array.from(document.querySelectorAll('.voice-checkbox:checked')).map(cb => cb.value);
+            const speed = parseFloat(document.getElementById('speedInput').value);
+            const format = document.getElementById('formatSelect').value;
+
+            if (!text.trim()) {
+                showError('请输入要转换的文本');
+                button.disabled = false;
+                button.textContent = '生成语音';
+                return;
+            }
+
+            if (selectedVoices.length === 0) {
+                showError('请至少选择一个朗读者');
+                button.disabled = false;
+                button.textContent = '生成语音';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/tts/data`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        voices: selectedVoices,
+                        speed: speed,
+                        format: format
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || `HTTP ${response.status}`);
+                }
+
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                
+                const audioPlayer = document.getElementById('audioPlayer');
+                audioPlayer.src = audioUrl;
+                
+                showSuccess(`语音生成成功！朗读者: ${selectedVoices.join(', ')}, 格式: ${format}, 语速: ${speed}`);
+            } catch (error) {
+                showError(`语音生成失败: ${error.message}`);
+            } finally {
+                button.disabled = false;
+                button.textContent = '生成语音';
+            }
+        }
+
+
+
+        // 显示成功消息
+        function showSuccess(message) {
+            const result = document.createElement('div');
+            result.className = 'success';
+            result.textContent = message;
+            
+            const target = document.getElementById('generationResult');
+            target.innerHTML = '';
+            target.appendChild(result);
+            
+            setTimeout(() => result.remove(), 5000);
+        }
+
+        // 显示错误消息
+        function showError(message) {
+            const result = document.createElement('div');
+            result.className = 'error';
+            result.textContent = message;
+            
+            const target = document.getElementById('generationResult');
+            target.innerHTML = '';
+            target.appendChild(result);
+            
+            setTimeout(() => result.remove(), 5000);
+        }
+
+        // 页面加载时检查API连接
+        window.addEventListener('load', async function() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`);
+                if (response.ok) {
+                    console.log('API连接成功');
+                } else {
+                    const result = document.createElement('div');
+                    result.className = 'error';
+                    result.textContent = 'API服务器未响应，请确保 tts_api.py 正在运行';
+                    document.getElementById('generationResult').appendChild(result);
+                }
+            } catch (error) {
+                const result = document.createElement('div');
+                result.className = 'error';
+                result.textContent = '无法连接到API服务器，请确保 tts_api.py 正在运行';
+                document.getElementById('generationResult').appendChild(result);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -18,6 +18,11 @@ packaging  # Version parsing for dependency checking
 numpy<2.0 # Numerical computing
 underthesea
 
+# API Server Dependencies
+fastapi  # FastAPI web framework
+uvicorn  # ASGI server
+python-multipart  # Form data support
+
 # Japan Language Libraries
 fugashi[unidic]
 jaconv
