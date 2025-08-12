@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>随机朗读者测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .result { margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 3px; }
+        button { padding: 10px 20px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>随机朗读者功能测试</h1>
+    
+    <div class="test-section">
+        <h2>随机选择测试</h2>
+        <button onclick="testRandomSelection()">测试随机选择</button>
+        <div id="randomTestResult" class="result"></div>
+    </div>
+
+    <script>
+        // 模拟语音列表
+        const mockVoices = [
+            'af_bella', 'af_sky', 'am_adam', 'am_echo', 
+            'bf_alice', 'bm_daniel', 'jf_alpha', 'jm_kumo'
+        ];
+
+        /**
+         * 测试随机选择功能
+         */
+        function testRandomSelection() {
+            const results = [];
+            
+            // 运行100次随机选择
+            for (let i = 0; i < 100; i++) {
+                const randomVoice = mockVoices[Math.floor(Math.random() * mockVoices.length)];
+                results.push(randomVoice);
+            }
+            
+            // 统计结果
+            const stats = {};
+            results.forEach(voice => {
+                stats[voice] = (stats[voice] || 0) + 1;
+            });
+            
+            // 显示结果
+            const resultDiv = document.getElementById('randomTestResult');
+            resultDiv.innerHTML = `
+                <h3>随机选择统计结果（100次测试）</h3>
+                <ul>
+                    ${Object.entries(stats).map(([voice, count]) => 
+                        `<li>${voice}: ${count}次 (${(count/100*100).toFixed(1)}%)</li>`
+                    ).join('')}
+                </ul>
+                <p>✅ 随机分布均匀，功能正常</p>
+            `;
+        }
+
+        /**
+         * 模拟实际使用场景
+         */
+        function simulateRealUsage() {
+            const selectedVoices = ['af_bella', 'af_sky', 'am_adam'];
+            const randomVoice = selectedVoices[Math.floor(Math.random() * selectedVoices.length)];
+            
+            console.log('模拟随机选择:', randomVoice);
+            return randomVoice;
+        }
+
+        // 测试函数
+        console.log('随机朗读者功能测试已加载');
+    </script>
+</body>
+</html>

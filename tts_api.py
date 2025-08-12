@@ -8,6 +8,7 @@ import io
 import tempfile
 import asyncio
 import random
+import hashlib
 from typing import Optional, List
 from pathlib import Path
 import torch
@@ -15,12 +16,17 @@ import numpy as np
 import soundfile as sf
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.responses import FileResponse, StreamingResponse, JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from contextlib import asynccontextmanager
 import uvicorn
 import logging
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
+import sys
+
+# 导入音量增强器
+sys.path.append(str(Path(__file__).parent))
+from volume_enhancer import enhance_tts_audio
 
 from models import build_model, generate_speech, list_available_voices
 from config import TTSConfig
@@ -79,10 +85,18 @@ model_lock = asyncio.Lock()
 # 请求模型
 class TTSRequest(BaseModel):
     text: str = Field(..., description="要转换的文本", max_length=10000)
-    voices: List[str] = Field(..., description="语音选择列表，随机选择一个使用")
+    voice: str = Field(..., description="语音选择，使用单个朗读者")
     speed: float = Field(default=1.0, ge=0.1, le=3.0, description="语速 (0.1-3.0)")
     format: str = Field(default="wav", description="输出音频格式")
     sample_rate: int = Field(default=24000, description="采样率")
+    volume_gain: float = Field(0.0, description="音量增益(dB)，正值增大音量，负值减小音量", ge=-20.0, le=20.0)
+
+    @field_validator('format')
+    def validate_format(cls, v):
+        supported_formats = {'wav', 'flac', 'ogg', 'mp3', 'aiff', 'au', 'caf', 'w64'}
+        if v.lower() not in supported_formats:
+            raise ValueError(f'不支持的音频格式: {v}。支持的格式: {", ".join(supported_formats)}')
+        return v.lower()
 
 class VoiceInfo(BaseModel):
     name: str
@@ -114,25 +128,33 @@ def validate_voice(voice_name: str) -> bool:
 
 def select_voice_from_request(request: TTSRequest) -> str:
     """根据请求选择语音"""
-    if not request.voices or len(request.voices) == 0:
+    if not request.voice:
         raise HTTPException(
             status_code=400,
-            detail="必须提供至少一个语音选择"
+            detail="必须提供语音选择"
         )
     
-    # 从提供的语音列表中随机选择一个
-    valid_voices = [v for v in request.voices if validate_voice(v)]
-    if not valid_voices:
+    # 直接使用提供的单个语音
+    if not validate_voice(request.voice):
         available_voices = list_available_voices()
         raise HTTPException(
             status_code=400,
-            detail=f"提供的语音列表中的语音都不存在。可用语音: {', '.join(available_voices)}"
+            detail=f"提供的语音不存在。可用语音: {', '.join(available_voices)}"
         )
-    selected_voice = random.choice(valid_voices)
-    logger.info(f"随机选择了语音: {selected_voice} 从列表: {valid_voices}")
-    return selected_voice
+    
+    logger.info(f"使用语音: {request.voice}")
+    return request.voice
 
-async def generate_audio(text: str, voice: str, speed: float, sample_rate: int) -> np.ndarray:
+def generate_sha1_filename(text: str, voice: str, speed: float, format: str) -> str:
+    """根据文本内容、朗读者、速度和格式生成SHA1哈希文件名"""
+    # 创建包含所有参数的唯一字符串
+    content = f"{text}_{voice}_{speed}"
+    # 生成SHA1哈希
+    sha1_hash = hashlib.sha1(content.encode('utf-8')).hexdigest()
+    # 返回格式化的文件名
+    return f"tts_{sha1_hash[:12]}.{format}"
+
+async def generate_audio(text: str, voice: str, speed: float, sample_rate: int, volume_gain: float = 0.0) -> np.ndarray:
     """生成音频数据"""
     model_instance = await get_model()
     
@@ -158,7 +180,13 @@ async def generate_audio(text: str, voice: str, speed: float, sample_rate: int) 
         else:
             final_audio = torch.cat(all_audio, dim=0)
         
-        return final_audio.numpy()
+        audio_data = final_audio.numpy()
+        
+        # 应用音量增益
+        if volume_gain != 0.0:
+            audio_data = enhance_tts_audio(audio_data, volume_gain)
+        
+        return audio_data
         
     except Exception as e:
         logger.error(f"Error generating audio: {e}")
@@ -221,7 +249,7 @@ async def text_to_speech_file(request: TTSRequest):
     selected_voice = select_voice_from_request(request)
     
     # 生成音频数据
-    audio_data = await generate_audio(request.text, selected_voice, request.speed, request.sample_rate)
+    audio_data = await generate_audio(request.text, selected_voice, request.speed, request.sample_rate, request.volume_gain)
     
     # 创建临时文件
     with tempfile.NamedTemporaryFile(delete=False, suffix=f".{request.format}") as tmp_file:
@@ -231,12 +259,15 @@ async def text_to_speech_file(request: TTSRequest):
         # 保存音频到临时文件
         sf.write(str(tmp_path), audio_data, request.sample_rate, format=request.format)
         
+        # 使用SHA1生成唯一文件名
+        filename = generate_sha1_filename(request.text, selected_voice, request.speed, request.format)
+        
         # 返回文件响应
         return FileResponse(
             path=str(tmp_path),
             media_type=f"audio/{request.format}",
-            filename=f"tts_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{request.format}",
-            headers={"Content-Disposition": f"attachment; filename=tts_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{request.format}"}
+            filename=filename,
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
         )
     except Exception as e:
         if tmp_path.exists():
@@ -251,7 +282,7 @@ async def text_to_speech_data(request: TTSRequest):
     selected_voice = select_voice_from_request(request)
     
     # 生成音频数据
-    audio_data = await generate_audio(request.text, selected_voice, request.speed, request.sample_rate)
+    audio_data = await generate_audio(request.text, selected_voice, request.speed, request.sample_rate, request.volume_gain)
     
     try:
         # 将音频数据写入内存缓冲区
@@ -259,11 +290,14 @@ async def text_to_speech_data(request: TTSRequest):
         sf.write(buffer, audio_data, request.sample_rate, format=request.format)
         buffer.seek(0)
         
+        # 使用SHA1生成唯一文件名
+        filename = generate_sha1_filename(request.text, selected_voice, request.speed, request.format)
+        
         # 返回流响应
         return StreamingResponse(
             buffer,
             media_type=f"audio/{request.format}",
-            headers={"Content-Disposition": f"inline; filename=tts_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{request.format}"}
+            headers={"Content-Disposition": f"inline; filename={filename}"}
         )
     except Exception as e:
         logger.error(f"Error generating audio stream: {e}")
@@ -276,7 +310,7 @@ async def text_to_speech_save(request: TTSRequest, output_path: str):
     selected_voice = select_voice_from_request(request)
     
     # 生成音频数据
-    audio_data = await generate_audio(request.text, selected_voice, request.speed, request.sample_rate)
+    audio_data = await generate_audio(request.text, selected_voice, request.speed, request.sample_rate, request.volume_gain)
     
     try:
         output_file = Path(output_path)
@@ -304,6 +338,36 @@ async def health_check():
         return {"status": "healthy", "model": "loaded"}
     except Exception as e:
         return {"status": "unhealthy", "error": str(e)}
+
+class FilenameRequest(BaseModel):
+    text: str = Field(..., description="要转换的文本")
+    voices: List[str] = Field(..., description="语音选择列表")
+    speed: float = Field(default=1.0, ge=0.1, le=3.0, description="语速")
+    format: str = Field(default="wav", description="输出音频格式")
+
+    @field_validator('format')
+    def validate_format(cls, v):
+        supported_formats = {'wav', 'flac', 'ogg', 'mp3', 'aiff', 'au', 'caf', 'w64'}
+        if v.lower() not in supported_formats:
+            raise ValueError(f'不支持的音频格式: {v}。支持的格式: {", ".join(supported_formats)}')
+        return v.lower()
+
+@app.post("/filename")
+async def get_filename(request: FilenameRequest):
+    """根据文本、朗读者和速度生成SHA1文件名"""
+    try:
+        selected_voice = select_voice_from_request(request)
+        filename = generate_sha1_filename(request.text, selected_voice, request.speed, request.format)
+        return {
+            "filename": filename,
+            "text_hash": hashlib.sha1(request.text.encode('utf-8')).hexdigest()[:12],
+            "voice": selected_voice,
+            "speed": request.speed,
+            "format": request.format
+        }
+    except Exception as e:
+        logger.error(f"Error generating filename: {e}")
+        raise HTTPException(status_code=500, detail=f"生成文件名失败: {str(e)}")
 
 
 

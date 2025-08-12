@@ -1,0 +1,275 @@
+﻿{
+    "value":  [
+                  {
+                      "name":  "af_alloy",
+                      "language":  "American English",
+                      "gender":  "Female"
+                  },
+                  {
+                      "name":  "af_aoede",
+                      "language":  "American English",
+                      "gender":  "Female"
+                  },
+                  {
+                      "name":  "af_bella",
+                      "language":  "American English",
+                      "gender":  "Female"
+                  },
+                  {
+                      "name":  "af_heart",
+                      "language":  "American English",
+                      "gender":  "Female"
+                  },
+                  {
+                      "name":  "af_jessica",
+                      "language":  "American English",
+                      "gender":  "Female"
+                  },
+                  {
+                      "name":  "af_kore",
+                      "language":  "American English",
+                      "gender":  "Female"
+                  },
+                  {
+                      "name":  "af_nicole",
+                      "language":  "American English",
+                      "gender":  "Female"
+                  },
+                  {
+                      "name":  "af_nova",
+                      "language":  "American English",
+                      "gender":  "Female"
+                  },
+                  {
+                      "name":  "af_river",
+                      "language":  "American English",
+                      "gender":  "Female"
+                  },
+                  {
+                      "name":  "af_sarah",
+                      "language":  "American English",
+                      "gender":  "Female"
+                  },
+                  {
+                      "name":  "af_sky",
+                      "language":  "American English",
+                      "gender":  "Female"
+                  },
+                  {
+                      "name":  "am_adam",
+                      "language":  "American English",
+                      "gender":  "Male"
+                  },
+                  {
+                      "name":  "am_echo",
+                      "language":  "American English",
+                      "gender":  "Male"
+                  },
+                  {
+                      "name":  "am_eric",
+                      "language":  "American English",
+                      "gender":  "Male"
+                  },
+                  {
+                      "name":  "am_fenrir",
+                      "language":  "American English",
+                      "gender":  "Male"
+                  },
+                  {
+                      "name":  "am_liam",
+                      "language":  "American English",
+                      "gender":  "Male"
+                  },
+                  {
+                      "name":  "am_michael",
+                      "language":  "American English",
+                      "gender":  "Male"
+                  },
+                  {
+                      "name":  "am_onyx",
+                      "language":  "American English",
+                      "gender":  "Male"
+                  },
+                  {
+                      "name":  "am_puck",
+                      "language":  "American English",
+                      "gender":  "Male"
+                  },
+                  {
+                      "name":  "am_santa",
+                      "language":  "American English",
+                      "gender":  "Male"
+                  },
+                  {
+                      "name":  "bf_alice",
+                      "language":  "British English",
+                      "gender":  "Female"
+                  },
+                  {
+                      "name":  "bf_emma",
+                      "language":  "British English",
+                      "gender":  "Female"
+                  },
+                  {
+                      "name":  "bf_isabella",
+                      "language":  "British English",
+                      "gender":  "Female"
+                  },
+                  {
+                      "name":  "bf_lily",
+                      "language":  "British English",
+                      "gender":  "Female"
+                  },
+                  {
+                      "name":  "bm_daniel",
+                      "language":  "British English",
+                      "gender":  "Male"
+                  },
+                  {
+                      "name":  "bm_fable",
+                      "language":  "British English",
+                      "gender":  "Male"
+                  },
+                  {
+                      "name":  "bm_george",
+                      "language":  "British English",
+                      "gender":  "Male"
+                  },
+                  {
+                      "name":  "bm_lewis",
+                      "language":  "British English",
+                      "gender":  "Male"
+                  },
+                  {
+                      "name":  "ef_dora",
+                      "language":  "Spanish",
+                      "gender":  "Female"
+                  },
+                  {
+                      "name":  "em_alex",
+                      "language":  "Spanish",
+                      "gender":  "Male"
+                  },
+                  {
+                      "name":  "em_santa",
+                      "language":  "Spanish",
+                      "gender":  "Male"
+                  },
+                  {
+                      "name":  "ff_siwis",
+                      "language":  "French",
+                      "gender":  "Female"
+                  },
+                  {
+                      "name":  "hf_alpha",
+                      "language":  "Hindi",
+                      "gender":  "Female"
+                  },
+                  {
+                      "name":  "hf_beta",
+                      "language":  "Hindi",
+                      "gender":  "Female"
+                  },
+                  {
+                      "name":  "hm_omega",
+                      "language":  "Hindi",
+                      "gender":  "Male"
+                  },
+                  {
+                      "name":  "hm_psi",
+                      "language":  "Hindi",
+                      "gender":  "Male"
+                  },
+                  {
+                      "name":  "if_sara",
+                      "language":  "Italian",
+                      "gender":  "Female"
+                  },
+                  {
+                      "name":  "im_nicola",
+                      "language":  "Italian",
+                      "gender":  "Male"
+                  },
+                  {
+                      "name":  "jf_alpha",
+                      "language":  "Japanese",
+                      "gender":  "Female"
+                  },
+                  {
+                      "name":  "jf_gongitsune",
+                      "language":  "Japanese",
+                      "gender":  "Female"
+                  },
+                  {
+                      "name":  "jf_nezumi",
+                      "language":  "Japanese",
+                      "gender":  "Female"
+                  },
+                  {
+                      "name":  "jf_tebukuro",
+                      "language":  "Japanese",
+                      "gender":  "Female"
+                  },
+                  {
+                      "name":  "jm_kumo",
+                      "language":  "Japanese",
+                      "gender":  "Male"
+                  },
+                  {
+                      "name":  "pf_dora",
+                      "language":  "Brazilian Portuguese",
+                      "gender":  "Female"
+                  },
+                  {
+                      "name":  "pm_alex",
+                      "language":  "Brazilian Portuguese",
+                      "gender":  "Male"
+                  },
+                  {
+                      "name":  "pm_santa",
+                      "language":  "Brazilian Portuguese",
+                      "gender":  "Male"
+                  },
+                  {
+                      "name":  "zf_xiaobei",
+                      "language":  "Mandarin Chinese",
+                      "gender":  "Female"
+                  },
+                  {
+                      "name":  "zf_xiaoni",
+                      "language":  "Mandarin Chinese",
+                      "gender":  "Female"
+                  },
+                  {
+                      "name":  "zf_xiaoxiao",
+                      "language":  "Mandarin Chinese",
+                      "gender":  "Female"
+                  },
+                  {
+                      "name":  "zf_xiaoyi",
+                      "language":  "Mandarin Chinese",
+                      "gender":  "Female"
+                  },
+                  {
+                      "name":  "zm_yunjian",
+                      "language":  "Mandarin Chinese",
+                      "gender":  "Male"
+                  },
+                  {
+                      "name":  "zm_yunxi",
+                      "language":  "Mandarin Chinese",
+                      "gender":  "Male"
+                  },
+                  {
+                      "name":  "zm_yunxia",
+                      "language":  "Mandarin Chinese",
+                      "gender":  "Male"
+                  },
+                  {
+                      "name":  "zm_yunyang",
+                      "language":  "Mandarin Chinese",
+                      "gender":  "Male"
+                  }
+              ],
+    "Count":  54
+}

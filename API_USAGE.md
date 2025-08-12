@@ -136,7 +136,8 @@ async def generate_speech():
             "text": "这是异步调用示例",
             "voice": "am_adam",
             "speed": 1.1,
-            "format": "mp3"
+            "format": "mp3",
+            "volume_gain": 6.0  # 增加6dB音量
         }
         
         async with session.post(
@@ -146,10 +147,10 @@ async def generate_speech():
         ) as response:
             audio_data = await response.read()
             
-            with open("async_output.mp3", "wb") as f:
+            with open("async_output_enhanced.mp3", "wb") as f:
                 f.write(audio_data)
             
-            print("异步音频文件已保存")
+            print("音量增强后的异步音频文件已保存")
 
 # 运行异步函数
 asyncio.run(generate_speech())
@@ -167,6 +168,7 @@ asyncio.run(generate_speech())
 | speed | float | 1.0 | 语速 | 0.1-3.0 |
 | format | string | "wav" | 输出格式 | "wav", "mp3", "aac" |
 | sample_rate | int | 24000 | 采样率 | 16000, 22050, 24000, 44100, 48000 |
+| volume_gain | float | 0.0 | 音量增益(dB) | -20.0到20.0，正值增大音量，负值减小音量 |
 
 ### 可用语音
 

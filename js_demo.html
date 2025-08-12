@@ -121,18 +121,26 @@
             <textarea id="textInput" rows="4" placeholder="请输入要转换的文本...">Hello, this is a test of Kokoro TTS API.</textarea>
             
             <label>选择朗读者（随机选择）：</label>
-            <div id="multiVoiceOptions"></div>
+            <div id="multiVoiceOptions">
+                <label><input type="checkbox" id="selectAllVoices" onchange="toggleAllVoices(this)"> 全选</label>
+                <div id="voiceCheckboxes"></div>
+            </div>
+            <button type="button" onclick="generateWithRandomVoice()">随机朗读者生成</button>
             
             <label for="speedInput">语速：</label>
             <input type="range" id="speedInput" min="0.1" max="3" step="0.1" value="1">
             <span id="speedValue">1.0</span>
             
-            <label for="formatSelect">输出格式：</label>
+            <label for="formatSelect">输出格式:</label>
             <select id="formatSelect">
                 <option value="wav">WAV</option>
                 <option value="mp3">MP3</option>
-                <option value="flac">FLAC</option>
+                <option value="aac">AAC</option>
             </select>
+            
+            <label for="volumeGain">音量增益 (dB):</label>
+            <input type="range" id="volumeGain" min="-10" max="20" value="0" step="1">
+            <span id="volumeGainValue">0 dB</span>
             
             <button onclick="generateSpeech(event)">生成语音</button>
             <div id="generationResult"></div>
@@ -146,98 +154,168 @@
     </div>
 
     <script>
+        // 定义API基础URL，指向本地TTS服务
         const API_BASE_URL = 'http://localhost:8000';
+        
+        // 用于存储获取到的语音列表数据
         let voices = [];
 
-        // 更新语速显示
+        // 监听语速滑块的输入事件，实时更新显示的语速值
         document.getElementById('speedInput').addEventListener('input', function(e) {
             document.getElementById('speedValue').textContent = e.target.value;
         });
 
-        // 获取语音列表
+        // 监听音量增益滑块的输入事件，实时更新显示的音量增益值
+        document.getElementById('volumeGain').addEventListener('input', function(e) {
+            document.getElementById('volumeGainValue').textContent = e.target.value + ' dB';
+        });
+
+        /**
+         * 获取可用语音列表
+         * 从TTS API获取所有可用的语音选项
+         * @param {Event} event - 点击事件对象
+         */
         async function getVoices(event) {
-            const button = event.target;
+            const button = event.target;  // 获取被点击的按钮
+            
+            // 禁用按钮并显示加载状态，防止重复点击
             button.disabled = true;
             button.innerHTML = '<span class="loading"></span> 获取中...';
 
             try {
+                // 向API发送GET请求获取语音列表
                 const response = await fetch(`${API_BASE_URL}/voices`);
+                
+                // 检查响应状态，如果不是200则抛出错误
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 
+                // 解析JSON响应数据
                 voices = await response.json();
+                
+                // 在界面上显示语音列表
                 displayVoices(voices);
+                
+                // 填充多朗读者选择区域的复选框
                 populateMultiVoiceOptions(voices);
                 
+                // 显示成功消息
                 showSuccess('语音列表获取成功！');
             } catch (error) {
+                // 显示错误消息
                 showError(`获取语音列表失败: ${error.message}`);
             } finally {
+                // 无论成功还是失败，都要恢复按钮状态
                 button.disabled = false;
                 button.textContent = '获取语音列表';
             }
         }
 
-        // 显示语音列表
+        /**
+         * 在界面上显示语音列表
+         * 将获取到的语音数据渲染到页面
+         * @param {Array} voices - 语音列表数组
+         */
         function displayVoices(voices) {
             const voiceList = document.getElementById('voiceList');
+            
+            // 清空原有内容并显示总数
             voiceList.innerHTML = `<h3>共找到 ${voices.length} 个语音</h3>`;
             
+            // 遍历每个语音，创建显示元素
             voices.forEach(voice => {
                 const div = document.createElement('div');
-                div.className = 'voice-item';
+                div.className = 'voice-item';  // 添加样式类
+                
+                // 设置显示内容：语音名称、语言和性别
                 div.innerHTML = `
                     <strong>${voice.name}</strong> - 
                     ${voice.language} (${voice.gender})
                 `;
+                
+                // 添加到语音列表容器
                 voiceList.appendChild(div);
             });
         }
 
-
-
-        // 填充多朗读者选项
+        /**
+         * 填充多朗读者选择区域的复选框
+         * 为每个语音创建一个复选框供用户选择
+         * @param {Array} voices - 语音列表数组
+         */
         function populateMultiVoiceOptions(voices) {
-            const container = document.getElementById('multiVoiceOptions');
+            const container = document.getElementById('voiceCheckboxes');
+            
+            // 清空原有内容
             container.innerHTML = '';
             
-            // 限制显示前20个语音作为示例
+            // 限制显示前20个语音作为示例，避免界面过长
             const limitedVoices = voices.slice(0, 20);
+            
+            // 为每个语音创建复选框
             limitedVoices.forEach(voice => {
                 const label = document.createElement('label');
-                label.innerHTML = `
-                    <input type="checkbox" class="voice-checkbox" value="${voice.name}">
-                    ${voice.name} - ${voice.language} (${voice.gender})
-                `;
+                label.style.display = 'block';
+                label.style.margin = '5px 0';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = voice.name;
+                checkbox.name = 'selectedVoices';
+                checkbox.className = 'voice-checkbox';
+                
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(` ${voice.name} - ${voice.language} (${voice.gender})`));
                 container.appendChild(label);
             });
         }
 
-        // 生成语音
-        async function generateSpeech(event) {
+        /**
+         * 全选/取消全选所有朗读者
+         * @param {HTMLElement} checkbox - 全选复选框
+         */
+        function toggleAllVoices(checkbox) {
+            const checkboxes = document.querySelectorAll('.voice-checkbox');
+            checkboxes.forEach(cb => cb.checked = checkbox.checked);
+        }
+
+        /**
+         * 从选中的朗读者中随机选择一个
+         * @returns {string|null} 随机选择的朗读者名称
+         */
+        function getRandomVoice() {
+            const selectedCheckboxes = document.querySelectorAll('.voice-checkbox:checked');
+            if (selectedCheckboxes.length === 0) {
+                showError('请至少选择一个朗读者！');
+                return null;
+            }
+            
+            const selectedVoices = Array.from(selectedCheckboxes).map(cb => cb.value);
+            const randomIndex = Math.floor(Math.random() * selectedVoices.length);
+            return selectedVoices[randomIndex];
+        }
+
+        /**
+         * 使用随机朗读者生成语音
+         */
+        async function generateWithRandomVoice() {
+            const text = document.getElementById('textInput').value.trim();
+            if (!text) {
+                showError('请输入要转换的文本！');
+                return;
+            }
+
+            const randomVoice = getRandomVoice();
+            if (!randomVoice) return;
+
             const button = event.target;
             button.disabled = true;
             button.innerHTML = '<span class="loading"></span> 生成中...';
 
-            const text = document.getElementById('textInput').value;
-            const selectedVoices = Array.from(document.querySelectorAll('.voice-checkbox:checked')).map(cb => cb.value);
-            const speed = parseFloat(document.getElementById('speedInput').value);
-            const format = document.getElementById('formatSelect').value;
-
-            if (!text.trim()) {
-                showError('请输入要转换的文本');
-                button.disabled = false;
-                button.textContent = '生成语音';
-                return;
-            }
-
-            if (selectedVoices.length === 0) {
-                showError('请至少选择一个朗读者');
-                button.disabled = false;
-                button.textContent = '生成语音';
-                return;
-            }
-
             try {
+                const speed = parseFloat(document.getElementById('speedInput').value);
+                const format = document.getElementById('formatSelect').value;
+                const volumeGain = parseFloat(document.getElementById('volumeGain').value);
+
                 const response = await fetch(`${API_BASE_URL}/tts/data`, {
                     method: 'POST',
                     headers: {
@@ -245,9 +323,10 @@
                     },
                     body: JSON.stringify({
                         text: text,
-                        voices: selectedVoices,
+                        voice: randomVoice,
                         speed: speed,
-                        format: format
+                        format: format,
+                        volume_gain: volumeGain
                     })
                 });
 
@@ -256,62 +335,157 @@
                     throw new Error(error.detail || `HTTP ${response.status}`);
                 }
 
-                const audioBlob = await response.blob();
-                const audioUrl = URL.createObjectURL(audioBlob);
+                const blob = await response.blob();
+                const audioUrl = URL.createObjectURL(blob);
                 
+                // 播放音频
                 const audioPlayer = document.getElementById('audioPlayer');
                 audioPlayer.src = audioUrl;
                 
-                showSuccess(`语音生成成功！朗读者: ${selectedVoices.join(', ')}, 格式: ${format}, 语速: ${speed}`);
+                showSuccess(`已使用朗读者 "${randomVoice}" 生成语音！`);
+
             } catch (error) {
                 showError(`语音生成失败: ${error.message}`);
             } finally {
                 button.disabled = false;
-                button.textContent = '生成语音';
+                button.innerHTML = '随机朗读者生成';
+            }
+        }
+
+        /**
+         * 生成语音的主要函数
+         * 收集用户输入，调用API生成语音，并在音频播放器中显示结果
+         * 支持单个朗读者和多个朗读者的随机选择
+         * @param {Event} event - 点击事件对象
+         */
+        async function generateSpeech(event) {
+            const button = event.target;
+            const text = document.getElementById('textInput').value.trim();
+            
+            if (!text) {
+                showError('请输入要转换的文本！');
+                return;
+            }
+
+            button.disabled = true;
+            button.innerHTML = '<span class="loading"></span> 生成中...';
+
+            try {
+                const speed = parseFloat(document.getElementById('speedInput').value);
+                const format = document.getElementById('formatSelect').value;
+                const volumeGain = parseFloat(document.getElementById('volumeGain').value);
+
+                // 获取选中的朗读者
+                const selectedCheckboxes = document.querySelectorAll('.voice-checkbox:checked');
+                if (selectedCheckboxes.length === 0) {
+                    throw new Error('请至少选择一个朗读者！');
+                }
+
+                const selectedVoices = Array.from(selectedCheckboxes).map(cb => cb.value);
+                
+                // 随机选择一个朗读者
+                const randomVoice = selectedVoices[Math.floor(Math.random() * selectedVoices.length)];
+
+                const response = await fetch(`${API_BASE_URL}/tts/data`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        voice: randomVoice,
+                        speed: speed,
+                        format: format,
+                        volume_gain: volumeGain
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || `HTTP ${response.status}`);
+                }
+
+                const blob = await response.blob();
+                const audioUrl = URL.createObjectURL(blob);
+                
+                // 播放音频
+                const audioPlayer = document.getElementById('audioPlayer');
+                audioPlayer.src = audioUrl;
+                audioPlayer.play();
+
+                showSuccess(`语音生成成功！使用朗读者: ${randomVoice}`);
+
+            } catch (error) {
+                showError(`语音生成失败: ${error.message}`);
+            } finally {
+                button.disabled = false;
+                button.innerHTML = '生成语音';
             }
         }
 
 
 
-        // 显示成功消息
+        /**
+         * 显示成功消息
+         * 在页面上创建一个绿色的成功提示框
+         * @param {string} message - 要显示的成功消息内容
+         */
         function showSuccess(message) {
+            // 创建消息元素
             const result = document.createElement('div');
-            result.className = 'success';
-            result.textContent = message;
+            result.className = 'success';  // 添加成功样式类
+            result.textContent = message;  // 设置消息文本
             
+            // 找到目标容器并清空原有内容
             const target = document.getElementById('generationResult');
             target.innerHTML = '';
             target.appendChild(result);
             
+            // 5秒后自动移除消息
             setTimeout(() => result.remove(), 5000);
         }
 
-        // 显示错误消息
+        /**
+         * 显示错误消息
+         * 在页面上创建一个红色的错误提示框
+         * @param {string} message - 要显示的错误消息内容
+         */
         function showError(message) {
+            // 创建消息元素
             const result = document.createElement('div');
-            result.className = 'error';
-            result.textContent = message;
+            result.className = 'error';  // 添加错误样式类
+            result.textContent = message;  // 设置消息文本
             
+            // 找到目标容器并清空原有内容
             const target = document.getElementById('generationResult');
             target.innerHTML = '';
             target.appendChild(result);
             
+            // 5秒后自动移除消息
             setTimeout(() => result.remove(), 5000);
         }
 
-        // 页面加载时检查API连接
+        /**
+         * 页面加载完成后的初始化函数
+         * 检查API服务器连接状态，确保服务可用
+         */
         window.addEventListener('load', async function() {
             try {
+                // 发送健康检查请求
                 const response = await fetch(`${API_BASE_URL}/health`);
+                
                 if (response.ok) {
+                    // 连接成功，在控制台输出日志
                     console.log('API连接成功');
                 } else {
+                    // 连接失败，显示错误消息
                     const result = document.createElement('div');
                     result.className = 'error';
                     result.textContent = 'API服务器未响应，请确保 tts_api.py 正在运行';
                     document.getElementById('generationResult').appendChild(result);
                 }
             } catch (error) {
+                // 网络错误或服务器未启动
                 const result = document.createElement('div');
                 result.className = 'error';
                 result.textContent = '无法连接到API服务器，请确保 tts_api.py 正在运行';
