@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTS Voice Speed Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #0056b3;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .voice-item {
+            background-color: #e9e9e9;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .voice-item span {
+            font-weight: bold;
+        }
+
+        .voice-item audio {
+            width: 200px;
+        }
+
+        .status {
+            font-style: italic;
+            color: #666;
+        }
+
+        .controls {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #log {
+            margin-top: 20px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background-color: #f9f9f9;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>TTS Voice Speed Test</h1>
+        <div class="controls">
+            <button id="startTest">Start Test</button>
+        </div>
+        <div id="voiceList">
+            <!-- Voice items will be loaded here -->
+        </div>
+        <h2>Log:</h2>
+        <pre id="log"></pre>
+    </div>
+
+    <script>
+        const voicesToTest = [
+            "af_alloy", "af_aoede", "af_bella", "af_heart", "af_jessica", "af_kore",
+            "af_nova", "af_river", "af_sarah", "af_sky", "am_adam", "am_echo",
+            "am_eric", "am_fenrir", "am_liam", "am_michael", "am_onyx", "am_puck",
+            "am_santa", "bf_alice", "bf_emma", "bf_isabella", "bf_lily", "bm_daniel",
+            "bm_fable", "bm_george", "bm_lewis"
+        ];
+        const testText = "Harry Potter was a highly unusual boy in many ways. For one thing, he hated the summer holidays more than any other time of year. For another, he really wanted to do his homework but was forced to do it in secret, in the dead of night.";
+        const ttsApiUrl = 'http://localhost:8000/tts/data'; // Ensure your API is running on this port
+
+        const voiceListDiv = document.getElementById('voiceList');
+        const logDiv = document.getElementById('log');
+        const startTestButton = document.getElementById('startTest');
+
+        let afAlloyDuration = 0;
+        const voiceDurations = {};
+
+        /**
+         * Logs messages to the console and the HTML log div.
+         * @param {string} message - The message to log.
+         */
+        function logMessage(message) {
+            console.log(message);
+            logDiv.textContent += message + '\n';
+            logDiv.scrollTop = logDiv.scrollHeight; // Scroll to bottom
+        }
+
+        /**
+         * Generates speech for a given voice and updates the UI.
+         * @param {string} voiceName - The name of the voice to test.
+         * @param {HTMLElement} statusElement - The HTML element to update with status.
+         * @param {HTMLElement} audioPlayerElement - The HTML audio element to play the speech.
+         * @param {HTMLElement} durationElement - The HTML element to display the audio duration.
+         */
+        async function generateSpeechAndPlay(voiceName, statusElement, audioPlayerElement, durationElement) {
+            statusElement.textContent = 'Generating...';
+            logMessage(`Requesting speech for voice: ${voiceName}`);
+
+            try {
+                const response = await fetch(ttsApiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: testText,
+                        voice: voiceName,
+                        format: 'wav' // Requesting WAV for broader browser compatibility
+                    }),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`HTTP error! status: ${response.status}, detail: ${errorData.detail || response.statusText}`);
+                }
+
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                audioPlayerElement.src = audioUrl;
+                audioPlayerElement.controls = true;
+                statusElement.textContent = 'Ready to play';
+                logMessage(`Successfully generated speech for ${voiceName}.`);
+
+                audioPlayerElement.onloadedmetadata = () => {
+                    const duration = audioPlayerElement.duration;
+                    durationElement.textContent = `Duration: ${duration.toFixed(2)}s`;
+                    voiceDurations[voiceName] = { duration: duration };
+                    if (voiceName === 'af_alloy') {
+                        afAlloyDuration = duration;
+                    }
+                    // logMessage(`${voiceName}: Duration = ${voiceDurations[voiceName].duration}`);
+                    logMessage(`${voiceName}: 推荐播放速度 = ${(voiceDurations[voiceName].duration / afAlloyDuration * 0.8).toFixed(2)}`);
+
+                };
+
+            } catch (error) {
+                statusElement.textContent = `Error: ${error.message}`;
+                audioPlayerElement.controls = false;
+                audioPlayerElement.src = '';
+                durationElement.textContent = '';
+                logMessage(`Error generating speech for ${voiceName}: ${error.message}`);
+                voiceDurations[voiceName] = { duration: 0 }; // Mark as failed or zero duration
+            }
+        }
+
+        /**
+         * Initializes the test by creating UI elements for each voice and starting the generation process.
+         */
+        async function startTest() {
+            startTestButton.disabled = true;
+            voiceListDiv.innerHTML = ''; // Clear previous list
+            logDiv.textContent = ''; // Clear log
+            logMessage('Starting TTS voice speed test...');
+
+            for (const voiceName of voicesToTest) {
+                const voiceItem = document.createElement('div');
+                voiceItem.className = 'voice-item';
+
+                const voiceNameSpan = document.createElement('span');
+                voiceNameSpan.textContent = voiceName;
+                voiceItem.appendChild(voiceNameSpan);
+
+                const statusSpan = document.createElement('span');
+                statusSpan.className = 'status';
+                statusSpan.textContent = 'Pending...';
+                voiceItem.appendChild(statusSpan);
+
+                const audioPlayer = document.createElement('audio');
+                voiceItem.appendChild(audioPlayer);
+
+                const durationSpan = document.createElement('span');
+                durationSpan.className = 'duration';
+                voiceItem.appendChild(durationSpan);
+
+                voiceListDiv.appendChild(voiceItem);
+
+                // Generate speech for each voice sequentially to avoid overwhelming the API
+                await generateSpeechAndPlay(voiceName, statusSpan, audioPlayer, durationSpan);
+            }
+            logMessage('TTS voice speed test completed.');
+            // Calculate and display recommended speeds
+            if (afAlloyDuration > 0) {
+                logMessage('\n--- Recommended Playback Speeds ---');
+                for (const voiceName of voicesToTest) {
+                    logMessage(`${voiceName}: 推荐播放速度 = ${(voiceDurations[voiceName].duration / afAlloyDuration * 0.8).toFixed(2)}`);
+                }
+            } else {
+                logMessage('Could not determine recommended speeds: af_alloy audio duration not available.');
+            }
+
+            startTestButton.disabled = false;
+        }
+
+        startTestButton.addEventListener('click', startTest);
+
+        // Optional: Automatically start the test when the page loads
+        // window.onload = startTest;
+    </script>
+</body>
+
+</html>
+
+}
+logMessage('TTS voice speed test completed.');
+startTestButton.disabled = false;
+}
+
+startTestButton.addEventListener('click', startTest);
+
+// Optional: Automatically start the test when the page loads
+// window.onload = startTest;
+</script>
+</body>
+
+</html>
