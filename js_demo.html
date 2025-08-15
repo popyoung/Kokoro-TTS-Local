@@ -75,18 +75,33 @@
             margin: 10px 0;
         }
         #voiceList {
-            max-height: 200px;
+            max-height: 300px; /* 增加高度以适应多列 */
             overflow-y: auto;
             border: 1px solid #ddd;
             padding: 10px;
             margin: 10px 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); /* 自动填充多列 */
+            gap: 10px; /* 列间距 */
+        }
+        #voiceCheckboxes {
+            max-height: 250px; /* 增加高度以适应多列 */
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 10px 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); /* 自动填充多列 */
+            gap: 10px; /* 列间距 */
         }
         .voice-item {
             padding: 5px;
-            border-bottom: 1px solid #eee;
-        }
-        .voice-item:last-child {
-            border-bottom: none;
+            border: 1px solid #eee; /* 添加边框以区分每个项目 */
+            border-radius: 5px;
+            text-align: center;
+            overflow: hidden; /* 隐藏溢出内容 */
+            text-overflow: ellipsis; /* 显示省略号 */
+            white-space: nowrap; /* 不换行 */
         }
         .loading {
             display: inline-block;
@@ -228,8 +243,7 @@
                 
                 // 设置显示内容：语音名称、语言和性别
                 div.innerHTML = `
-                    <strong>${voice.name}</strong> - 
-                    ${voice.language} (${voice.gender})
+                    <strong>${voice.name}</strong>
                 `;
                 
                 // 添加到语音列表容器
@@ -248,8 +262,8 @@
             // 清空原有内容
             container.innerHTML = '';
             
-            // 限制显示前20个语音作为示例，避免界面过长
-            const limitedVoices = voices.slice(0, 20);
+            // 不限制显示语音数量，显示所有语音
+            const limitedVoices = voices;
             
             // 为每个语音创建复选框
             limitedVoices.forEach(voice => {
@@ -264,7 +278,7 @@
                 checkbox.className = 'voice-checkbox';
                 
                 label.appendChild(checkbox);
-                label.appendChild(document.createTextNode(` ${voice.name} - ${voice.language} (${voice.gender})`));
+                label.appendChild(document.createTextNode(` ${voice.name}`));
                 container.appendChild(label);
             });
         }

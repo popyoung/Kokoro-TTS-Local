@@ -100,12 +100,12 @@
     <script>
         const voicesToTest = [
             "af_alloy", "af_aoede", "af_bella", "af_heart", "af_jessica", "af_kore",
-            "af_nova", "af_river", "af_sarah", "af_sky", "am_adam", "am_echo",
-            "am_eric", "am_fenrir", "am_liam", "am_michael", "am_onyx", "am_puck",
-            "am_santa", "bf_alice", "bf_emma", "bf_isabella", "bf_lily", "bm_daniel",
-            "bm_fable", "bm_george", "bm_lewis"
+            "af_nicole", "af_nova", "af_river", "af_sarah", "af_sky", "am_adam",
+            "am_echo", "am_eric", "am_fenrir", "am_liam", "am_michael", "am_onyx",
+            "am_puck", "am_santa", "bf_alice", "bf_emma", "bf_isabella", "bf_lily",
+            "bm_daniel", "bm_fable", "bm_george", "bm_lewis"
         ];
-        const testText = "Harry Potter was a highly unusual boy in many ways. For one thing, he hated the summer holidays more than any other time of year. For another, he really wanted to do his homework but was forced to do it in secret, in the dead of night.";
+        const testText = "It was a moment of pure despair for everyone involved.";
         const ttsApiUrl = 'http://localhost:8000/tts/data'; // Ensure your API is running on this port
 
         const voiceListDiv = document.getElementById('voiceList');
@@ -132,55 +132,72 @@
          * @param {HTMLElement} audioPlayerElement - The HTML audio element to play the speech.
          * @param {HTMLElement} durationElement - The HTML element to display the audio duration.
          */
+        /**
+         * Generates speech for a given voice and updates the UI.
+         * Returns a Promise that resolves when the audio metadata is loaded.
+         * @param {string} voiceName - The name of the voice to test.
+         * @param {HTMLElement} statusElement - The HTML element to update with status.
+         * @param {HTMLElement} audioPlayerElement - The HTML audio element to play the speech.
+         * @param {HTMLElement} durationElement - The HTML element to display the audio duration.
+         * @returns {Promise<void>}
+         */
         async function generateSpeechAndPlay(voiceName, statusElement, audioPlayerElement, durationElement) {
             statusElement.textContent = 'Generating...';
             logMessage(`Requesting speech for voice: ${voiceName}`);
 
-            try {
-                const response = await fetch(ttsApiUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        text: testText,
-                        voice: voiceName,
-                        format: 'wav' // Requesting WAV for broader browser compatibility
-                    }),
-                });
+            return new Promise(async (resolve) => {
+                try {
+                    const response = await fetch(ttsApiUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            text: testText,
+                            voice: voiceName,
+                            format: 'wav' // Requesting WAV for broader browser compatibility
+                        }),
+                    });
 
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(`HTTP error! status: ${response.status}, detail: ${errorData.detail || response.statusText}`);
-                }
-
-                const audioBlob = await response.blob();
-                const audioUrl = URL.createObjectURL(audioBlob);
-                audioPlayerElement.src = audioUrl;
-                audioPlayerElement.controls = true;
-                statusElement.textContent = 'Ready to play';
-                logMessage(`Successfully generated speech for ${voiceName}.`);
-
-                audioPlayerElement.onloadedmetadata = () => {
-                    const duration = audioPlayerElement.duration;
-                    durationElement.textContent = `Duration: ${duration.toFixed(2)}s`;
-                    voiceDurations[voiceName] = { duration: duration };
-                    if (voiceName === 'af_alloy') {
-                        afAlloyDuration = duration;
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(`HTTP error! status: ${response.status}, detail: ${errorData.detail || response.statusText}`);
                     }
-                    // logMessage(`${voiceName}: Duration = ${voiceDurations[voiceName].duration}`);
-                    logMessage(`${voiceName}: 推荐播放速度 = ${(voiceDurations[voiceName].duration / afAlloyDuration * 0.8).toFixed(2)}`);
 
-                };
+                    const audioBlob = await response.blob();
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    audioPlayerElement.src = audioUrl;
+                    audioPlayerElement.controls = true;
+                    statusElement.textContent = 'Ready to play';
+                    logMessage(`Successfully generated speech for ${voiceName}.`);
 
-            } catch (error) {
-                statusElement.textContent = `Error: ${error.message}`;
-                audioPlayerElement.controls = false;
-                audioPlayerElement.src = '';
-                durationElement.textContent = '';
-                logMessage(`Error generating speech for ${voiceName}: ${error.message}`);
-                voiceDurations[voiceName] = { duration: 0 }; // Mark as failed or zero duration
-            }
+                    audioPlayerElement.onloadedmetadata = () => {
+                        const duration = audioPlayerElement.duration;
+                        durationElement.textContent = `Duration: ${duration.toFixed(2)}s`;
+                        voiceDurations[voiceName] = { duration: duration };
+                        if (voiceName === 'af_alloy') {
+                            afAlloyDuration = duration;
+                        }
+                        // logMessage(`${voiceName}: Duration = ${voiceDurations[voiceName].duration}`);
+                        logMessage(`${voiceName}: 推荐播放速度 = ${(voiceDurations[voiceName].duration / afAlloyDuration * 0.9).toFixed(2)}`);
+                        resolve(); // Resolve the promise when metadata is loaded
+                    };
+
+                    // Handle cases where metadata might already be loaded (e.g., from cache)
+                    if (audioPlayerElement.readyState >= 2) { // HAVE_CURRENT_DATA or higher
+                        audioPlayerElement.onloadedmetadata();
+                    }
+
+                } catch (error) {
+                    statusElement.textContent = `Error: ${error.message}`;
+                    audioPlayerElement.controls = false;
+                    audioPlayerElement.src = '';
+                    durationElement.textContent = '';
+                    logMessage(`Error generating speech for ${voiceName}: ${error.message}`);
+                    voiceDurations[voiceName] = { duration: 0 }; // Mark as failed or zero duration
+                    resolve(); // Resolve even on error to continue the flow
+                }
+            });
         }
 
         /**
@@ -192,6 +209,8 @@
             logDiv.textContent = ''; // Clear log
             logMessage('Starting TTS voice speed test...');
 
+            // Create UI elements for all voices first
+            const voiceElements = {};
             for (const voiceName of voicesToTest) {
                 const voiceItem = document.createElement('div');
                 voiceItem.className = 'voice-item';
@@ -214,42 +233,47 @@
 
                 voiceListDiv.appendChild(voiceItem);
 
-                // Generate speech for each voice sequentially to avoid overwhelming the API
+                voiceElements[voiceName] = { statusSpan, audioPlayer, durationSpan };
+            }
+
+            // Process af_alloy first to ensure its duration is available
+            const afAlloyVoiceName = 'af_alloy';
+            if (voicesToTest.includes(afAlloyVoiceName)) {
+                const { statusSpan, audioPlayer, durationSpan } = voiceElements[afAlloyVoiceName];
+                await generateSpeechAndPlay(afAlloyVoiceName, statusSpan, audioPlayer, durationSpan);
+            } else {
+                logMessage(`Warning: ${afAlloyVoiceName} not found in voicesToTest. Cannot calculate recommended speeds.`);
+            }
+
+            // Process other voices sequentially
+            for (const voiceName of voicesToTest) {
+                if (voiceName === afAlloyVoiceName) continue; // Skip af_alloy as it's already processed
+                const { statusSpan, audioPlayer, durationSpan } = voiceElements[voiceName];
                 await generateSpeechAndPlay(voiceName, statusSpan, audioPlayer, durationSpan);
             }
+
             logMessage('TTS voice speed test completed.');
-            // Calculate and display recommended speeds
+
+            // Calculate and display recommended speeds after all durations are available
             if (afAlloyDuration > 0) {
                 logMessage('\n--- Recommended Playback Speeds ---');
                 for (const voiceName of voicesToTest) {
-                    logMessage(`${voiceName}: 推荐播放速度 = ${(voiceDurations[voiceName].duration / afAlloyDuration * 0.8).toFixed(2)}`);
+                    // Ensure duration is available before calculating
+                    if (voiceDurations[voiceName] && voiceDurations[voiceName].duration !== undefined) {
+                        logMessage(`${voiceName}: ${(voiceDurations[voiceName].duration / afAlloyDuration * 0.9).toFixed(2)},`);
+                    } else {
+                        logMessage(`${voiceName}: Duration not available, cannot calculate recommended speed.`);
+                    }
                 }
             } else {
-                logMessage('Could not determine recommended speeds: af_alloy audio duration not available.');
+                logMessage('Could not determine recommended speeds: af_alloy audio duration not available or failed to load.');
             }
 
             startTestButton.disabled = false;
         }
 
         startTestButton.addEventListener('click', startTest);
-
-        // Optional: Automatically start the test when the page loads
-        // window.onload = startTest;
     </script>
-</body>
-
-</html>
-
-}
-logMessage('TTS voice speed test completed.');
-startTestButton.disabled = false;
-}
-
-startTestButton.addEventListener('click', startTest);
-
-// Optional: Automatically start the test when the page loads
-// window.onload = startTest;
-</script>
 </body>
 
 </html>
